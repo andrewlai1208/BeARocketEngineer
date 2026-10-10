@@ -1,0 +1,222 @@
+{
+  "avionics_room": {
+    "npcId": "avionics_lead",
+    "npcName": "小陳",
+    "roleTitle": "航電組長",
+    "badgeColor": "bg-blue-600 text-white",
+    "events": [
+      {
+        "id": "av_boot_fail",
+        "priority": 10,
+        "conditions": { "requiresNotSolved": ["av_boot_fail"] },
+        "speaker": "小陳 (航電工程師)",
+        "text": "「隊長！上電燒測發現主控板陀螺儀 I2C 總線全部鎖死，加速規回傳 0xFF！明天清晨 5 點貨車就要來了！」",
+        "options": [
+          {
+            "label": "A. 拿熱風槍換上備用晶片 (-$300, 耗費體力)",
+            "effects": { "budget": -300, "morale": -5, "readiness": 25 },
+            "reply": "「好！我立刻去熱風台吹焊，保證焊出最穩的接點！」",
+            "unlockEvents": ["prop_ignition_sync"]
+          },
+          {
+            "label": "B. 改用純氣壓計姿態演算法降級運算 (零開銷)",
+            "effects": { "budget": 0, "morale": -8, "readiness": 15 },
+            "reply": "「收到，我修改 flight control logic，只希望升空別 drift 得太誇張⋯⋯」"
+          }
+        ]
+      },
+      {
+        "id": "av_rf_telemetry",
+        "priority": 5,
+        "conditions": { "requiresSolved": ["av_boot_fail"], "minReadiness": 40 },
+        "speaker": "小陳 (航電工程師)",
+        "text": "「晶片搞定了！但現在地面遙測接收站 (Telemetry 433MHz) 丟包率偏高，要不要加裝定向天線？」",
+        "options": [
+          {
+            "label": "加裝 9dBi 八木天線延長桿 (-$150)",
+            "effects": { "budget": -150, "morale": 2, "readiness": 15 },
+            "reply": "「訊號信噪比上升了 14dB，這下在沙灘發射場也能收到完整數據！」"
+          },
+          {
+            "label": "省錢，發射時讓隊員手舉天線手動追蹤",
+            "effects": { "budget": 0, "morale": -6, "readiness": 8 },
+            "reply": "「好吧⋯⋯那明天發射我負責拿著天線站在海風裡追火箭。」"
+          }
+        ]
+      },
+      {
+        "id": "av_idle",
+        "priority": 0,
+        "conditions": {},
+        "speaker": "小陳 (航電工程師)",
+        "text": "「航電系統狀態良好，雙重電子開傘線路已經 Arming Ready！」",
+        "options": [
+          { "label": "很好，繼續保持警戒。", "effects": {}, "reply": "「收到，隨時準備上架！」" }
+        ]
+      }
+    ]
+  },
+  "propulsion_room": {
+    "npcId": "propulsion_lead",
+    "npcName": "阿豪",
+    "roleTitle": "推進工程師",
+    "badgeColor": "bg-red-600 text-white",
+    "events": [
+      {
+        "id": "prop_leak_check",
+        "priority": 10,
+        "conditions": { "requiresNotSolved": ["prop_leak_check"] },
+        "speaker": "阿豪 (推進負責人)",
+        "text": "「Solid motor 固態藥柱填裝完畢，但喉部石墨裝入噴管後，O-Ring 擠壓率偏低，試車 60 bar 可能有微漏爆膛風險！」",
+        "options": [
+          {
+            "label": "A. 塗耐千度矽脂並雙墊圈迫緊 (-$100)",
+            "effects": { "budget": -100, "morale": 2, "readiness": 25 },
+            "reply": "「希望這道野雞工程能耐住 2200K 尾焰高溫！已固定妥當！」"
+          },
+          {
+            "label": "B. 推進全體通宵，去實習工廠重新車削新噴喉 (-$200)",
+            "effects": { "budget": -200, "morale": -18, "readiness": 30 },
+            "reply": "「今晚通宵到底了⋯⋯我現在穿圍裙去車床間銑金屬！」"
+          }
+        ]
+      },
+      {
+        "id": "prop_ignition_sync",
+        "priority": 8,
+        "conditions": { "requiresSolved": ["prop_leak_check", "av_boot_fail"] },
+        "speaker": "阿豪 (推進負責人)",
+        "text": "「航電的電發火管訊號線接過來了！電阻量測 1.2 歐姆，點火母火藥要不要做二重冗餘防啞火？」",
+        "options": [
+          {
+            "label": "加入雙電子點火頭冗餘配線 (-$80)",
+            "effects": { "budget": -80, "morale": 4, "readiness": 20 },
+            "reply": "「雙重安全點火建立！絕不會在倒數結束時啞火冷場！」"
+          },
+          {
+            "label": "維持單點火管即可，節省物資",
+            "effects": { "budget": 0, "morale": 0, "readiness": 10 },
+            "reply": "「祈禱明天沙灘上海風濕氣不要受潮引信！」"
+          }
+        ]
+      },
+      {
+        "id": "prop_idle",
+        "priority": 0,
+        "conditions": {},
+        "speaker": "阿豪 (推進負責人)",
+        "text": "「發動機已封裝完成並鎖定在發射軌道夾具上。就等離架口令！」",
+        "options": [
+          { "label": "辛苦了，注意推進劑防火規範。", "effects": {}, "reply": "「明白，滅火器都已就位備便！」" }
+        ]
+      }
+    ]
+  },
+  "structures_room": {
+    "npcId": "structures_lead",
+    "npcName": "林學姐",
+    "roleTitle": "結構碳纖組",
+    "badgeColor": "bg-emerald-600 text-white",
+    "events": [
+      {
+        "id": "struct_cf_bubble",
+        "priority": 10,
+        "conditions": { "requiresNotSolved": ["struct_cf_bubble"] },
+        "speaker": "林學姐 (結構領隊)",
+        "text": "「剛才抽真空幫浦跳電了！這批碳纖維筒身環氧樹脂快硬化了，起泡的話抗剪力會直接打折！」",
+        "options": [
+          {
+            "label": "A. 全員戴上手套手工刮膠補壓真空 (-$0)",
+            "effects": { "budget": 0, "morale": -6, "readiness": 20 },
+            "reply": "「大家一起上！用刮刀推掉氣泡，趕在膠化前固定！」"
+          },
+          {
+            "label": "B. 整筒報廢，換備用鋁合金薄管 (-$600)",
+            "effects": { "budget": -600, "morale": 6, "readiness": 25 },
+            "reply": "「重量雖然重了 400g，但剛性保證頂得住 15G 最大動壓過載！」"
+          }
+        ]
+      },
+      {
+        "id": "struct_fin_align",
+        "priority": 6,
+        "conditions": { "requiresSolved": ["struct_cf_bubble"], "minReadiness": 50 },
+        "speaker": "林學姐 (結構領隊)",
+        "text": "「尾翼 4 片碳纖夾板黏接完畢，但雷射水準儀測出 0.5 度偏角，升空會產生滾轉！」",
+        "options": [
+          {
+            "label": "重新加熱環氧樹脂精準校正至 0 度 (-$120)",
+            "effects": { "budget": -120, "morale": -4, "readiness": 20 },
+            "reply": "「雷射校正完成！保證彈道如標槍一樣筆直！」"
+          },
+          {
+            "label": "不修正，就當作自旋滾轉穩定 (Roll Stabilization)",
+            "effects": { "budget": 0, "morale": 2, "readiness": 10 },
+            "reply": "「化 Bug 為 Feature，航太界的經典傳統！」"
+          }
+        ]
+      },
+      {
+        "id": "struct_idle",
+        "priority": 0,
+        "conditions": {},
+        "speaker": "林學姐 (結構領隊)",
+        "text": "「箭體結構強度已通過動態共振敲擊測試，完全能承受超音速風阻！」",
+        "options": [
+          { "label": "很好，結構是火箭的骨肉！", "effects": {}, "reply": "「收到，準備運往發射架！」" }
+        ]
+      }
+    ]
+  },
+  "central_courtyard": {
+    "npcId": "captain_lead",
+    "npcName": "老張",
+    "roleTitle": "總隊長",
+    "badgeColor": "bg-purple-600 text-white",
+    "events": [
+      {
+        "id": "lead_budget_crisis",
+        "priority": 10,
+        "conditions": { "requiresNotSolved": ["lead_budget_crisis"] },
+        "speaker": "老張 (社團隊長)",
+        "text": "「載發射架的小貨車司機說清晨過路費跟油錢要先給現金，系辦經費還卡在審核⋯⋯帳戶見底了！」",
+        "options": [
+          {
+            "label": "A. 隊長自掏腰包先墊付 (-$400)",
+            "effects": { "budget": -400, "morale": 10, "readiness": 10 },
+            "reply": "「嗚嗚⋯⋯為了火箭夢，這個月只能天天吃科學麵了！」"
+          },
+          {
+            "label": "B. 發 Threads 脆文尋求畢業系友贊助 (+$600)",
+            "effects": { "budget": 600, "morale": -8, "readiness": 5 },
+            "reply": "「太神啦！真有竹科工程師學長轉帳力挺學生火箭隊！」"
+          }
+        ]
+      },
+      {
+        "id": "lead_safety_review",
+        "priority": 7,
+        "conditions": { "minReadiness": 60, "requiresNotSolved": ["lead_safety_review"] },
+        "speaker": "老張 (社團隊長)",
+        "text": "「發射場安全半徑需要 500 公尺淨空，海巡署要求我們指派兩位隊員擔任外圍管制員！」",
+        "options": [
+          {
+            "label": "安排輪值哨，保證發射絕對安全",
+            "effects": { "budget": 0, "morale": -4, "readiness": 15 },
+            "reply": "「對講機頻道已與海巡連線，安全第一！」"
+          }
+        ]
+      },
+      {
+        "id": "lead_idle",
+        "priority": 0,
+        "conditions": {},
+        "speaker": "老張 (社團隊長)",
+        "text": "「各組狀況差不多齊全了！只要你一聲令下，我們就呼叫貨車裝箱！」",
+        "options": [
+          { "label": "收到，我再做最後一輪巡檢！", "effects": {}, "reply": "「隨時聽候差遣！」" }
+        ]
+      }
+    ]
+  }
+}

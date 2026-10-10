@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rocket24hr : 學生火箭工坊的肝帝日常</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="relative w-screen h-screen overflow-hidden">
+
+  <canvas id="webgl-canvas"></canvas>
+  <div id="badge-container" class="absolute inset-0 pointer-events-none z-20"></div>
+
+  <!-- 封面選角 -->
+  <div id="cover-screen" class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md transition-opacity duration-500">
+    <div class="relative w-full max-w-xl bg-white rounded-3xl p-7 md:p-9 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+          <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+          MODULAR MULTI-ROOM LAB
+        </span>
+        <span class="text-xs font-mono-num text-slate-400 font-semibold">PROJECT EDITION</span>
+      </div>
+
+      <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+        Rocket<span class="text-blue-600">24hr</span>
+      </h1>
+      <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+        倒數 18 小時！三間獨立研發室各有難題，利用中央走廊穿梭協調各組，頂住經費與肝度壓力！
+      </p>
+
+      <div class="mt-5 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1.5">負責人代號</label>
+          <input type="text" id="input-player-name" value="阿剛" maxlength="10"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1.5">擔當職位</label>
+          <div class="grid grid-cols-3 gap-2.5" id="role-selector">
+            <button type="button" data-role="SE" data-title="系統整合 Lead"
+              class="role-btn active py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-blue-50 border-blue-500 text-blue-900">
+              <span>🧭 系統整合</span>
+              <span class="text-[10px] text-blue-700 font-medium">總攬救火協調</span>
+            </button>
+            <button type="button" data-role="PROP" data-title="推進工程 Propulsion"
+              class="role-btn py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-white border-slate-200 text-slate-600 hover:border-slate-300">
+              <span>🔥 推進工程</span>
+              <span class="text-[10px] text-slate-400 font-medium">燃燒室與高壓閥</span>
+            </button>
+            <button type="button" data-role="AV" data-title="航電飛控 Avionics"
+              class="role-btn py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-white border-slate-200 text-slate-600 hover:border-slate-300">
+              <span>⚡ 航電飛控</span>
+              <span class="text-[10px] text-slate-400 font-medium">姿態估計與電路</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-7 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="text-[11px] text-slate-400">
+          鍵盤：<span class="font-bold text-slate-700">WASD</span> 移動・靠近組員 <span class="font-bold text-slate-700">[E]</span> 互動
+        </div>
+        <button id="btn-start-game"
+          class="w-full sm:w-auto px-7 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-blue-500/25 transition">
+          進入工坊 →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUD 狀態欄 -->
+  <header class="absolute top-4 left-4 right-4 z-30 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pointer-events-none">
+    <div class="glass-panel rounded-2xl px-5 py-3 flex items-center gap-5 pointer-events-auto border-l-4 border-l-blue-600 shadow-xl">
+      <div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">T-MINUS 試車倒數</span>
+        </div>
+        <div id="timer-display" class="font-mono-num text-xl font-extrabold text-slate-800">17:59:40</div>
+      </div>
+
+      <div class="h-8 w-px bg-slate-200"></div>
+
+      <div class="flex items-center gap-4 text-xs font-mono-num">
+        <div>
+          <span class="text-slate-400 block text-[10px] font-sans">隊費帳戶</span>
+          <span id="stat-budget" class="font-bold text-emerald-600 text-sm">$1,450 NTD</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] font-sans">團隊肝指數</span>
+          <span id="stat-morale" class="font-bold text-amber-600 text-sm">96%</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] font-sans">整箭整備度</span>
+          <span id="stat-readiness" class="font-bold text-blue-600 text-sm">20%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-panel rounded-2xl px-3 py-2 flex items-center gap-2 pointer-events-auto text-xs shadow-xl">
+      <button id="btn-sound-toggle" class="px-2.5 py-1.5 rounded-xl hover:bg-slate-100 text-slate-600 font-bold transition flex items-center gap-1">
+        <span id="sound-icon">🔊</span> <span id="sound-text">音效</span>
+      </button>
+      <div class="h-4 w-px bg-slate-200"></div>
+      <button id="btn-final-launch" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition shadow-sm">
+        🚀 裝箱拉往發射場
+      </button>
+    </div>
+  </header>
+
+  <!-- 對話抽屜 -->
+  <div id="dialogue-box" class="absolute bottom-6 left-1/2 -translate-x-1/2 w-11/12 max-w-2xl z-40 hidden pointer-events-auto">
+    <div class="glass-panel rounded-3xl p-5 md:p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span id="diag-badge" class="px-2.5 py-0.5 rounded-full text-xs font-black text-white bg-blue-600">小組</span>
+          <span id="diag-speaker" class="font-bold text-sm text-slate-800">名稱</span>
+        </div>
+        <button id="diag-btn-close" class="text-slate-400 hover:text-slate-600 text-xs px-2.5 py-1 rounded-lg bg-slate-100">ESC 關閉</button>
+      </div>
+
+      <p id="diag-text" class="text-slate-700 text-sm mt-3.5 leading-relaxed min-h-[44px]">讀取事件中...</p>
+      <div id="diag-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4"></div>
+    </div>
+  </div>
+
+  <!-- 結算彈窗 -->
+  <div id="result-modal" class="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center hidden p-4">
+    <div class="max-w-md w-full bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 text-center">
+      <div id="res-icon" class="text-5xl mb-2">🎉</div>
+      <h2 id="res-title" class="text-xl font-black text-slate-900">發射結果</h2>
+      <div id="res-badge" class="inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-3 bg-emerald-100 text-emerald-800 border border-emerald-300">STATUS</div>
+      <p id="res-desc" class="text-xs text-slate-600 leading-relaxed text-left bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-5"></p>
+      <button id="btn-restart" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm transition">重返工坊</button>
+    </div>
+  </div>
+
+  <!-- 主程式模組載入 -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

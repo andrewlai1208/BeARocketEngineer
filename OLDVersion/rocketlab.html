@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket24hr : 學生火箭工坊的肝帝日常</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; user-select: none; }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Noto Sans TC', 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a; color: #1e293b;
+        }
+        .font-mono-num { font-family: 'JetBrains Mono', monospace; }
+        #webgl-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 1;
+        }
+        .hud-badge {
+            position: absolute; pointer-events: none; transform: translate(-50%, -100%);
+            white-space: nowrap; font-size: 11px; font-weight: 700; padding: 4px 10px;
+            border-radius: 9999px; box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.18);
+            z-index: 20; transition: opacity 0.15s ease, transform 0.1s ease; backdrop-filter: blur(8px);
+        }
+        .interact-pill {
+            position: absolute; pointer-events: none; transform: translate(-50%, -150%);
+            z-index: 22; animation: bounceSoft 1.2s infinite ease-in-out;
+        }
+        @keyframes bounceSoft {
+            0%, 100% { transform: translate(-50%, -150%); }
+            50% { transform: translate(-50%, -168%); }
+        }
+        .click-ripple {
+            position: absolute; width: 32px; height: 32px; border-radius: 50%;
+            border: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.2);
+            pointer-events: none; transform: translate(-50%, -50%) scale(0.2);
+            animation: rippleAnim 0.45s ease-out forwards; z-index: 15;
+        }
+        @keyframes rippleAnim {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
+        }
+    </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden">
+
+    <canvas id="webgl-canvas"></canvas>
+    <div id="badge-container" class="absolute inset-0 pointer-events-none z-20"></div>
+
+    <!-- COVER SCREEN / ROLE SELECTOR -->
+    <div id="cover-screen" class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md transition-opacity duration-500">
+        <div class="relative w-full max-w-xl bg-white rounded-3xl p-7 md:p-9 shadow-2xl border border-slate-200">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    MODULAR MULTI-ROOM WORKSHOP
+                </span>
+                <span class="text-xs font-mono-num text-slate-400 font-semibold">JSON EVENT ENGINE v2.0</span>
+            </div>
+
+            <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                Rocket<span class="text-blue-600">24hr</span> : 隔間工坊
+            </h1>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+                航電間、推進測試區、複合材料室各據一方！中央為火箭組裝中庭。請選擇擔當角色，四處巡檢解決各組隱患！
+            </p>
+
+            <div class="mt-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">負責人代號</label>
+                    <input type="text" id="input-player-name" value="阿剛" maxlength="10"
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">擔當職位（影響特定劇情事件權限）</label>
+                    <div class="grid grid-cols-3 gap-2.5" id="role-selector">
+                        <button type="button" data-role="SE" data-title="系統整合 Lead"
+                            class="role-btn active py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-blue-50 border-blue-500 text-blue-900">
+                            <span>🧭 系統整合</span>
+                            <span class="text-[10px] text-blue-700 font-medium">總攬救火協調</span>
+                        </button>
+                        <button type="button" data-role="PROP" data-title="推進工程 Propulsion"
+                            class="role-btn py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-white border-slate-200 text-slate-600 hover:border-slate-300">
+                            <span>🔥 推進工程</span>
+                            <span class="text-[10px] text-slate-400 font-medium">燃燒室與高壓閥</span>
+                        </button>
+                        <button type="button" data-role="AV" data-title="航電飛控 Avionics"
+                            class="role-btn py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-white border-slate-200 text-slate-600 hover:border-slate-300">
+                            <span>⚡ 航電飛控</span>
+                            <span class="text-[10px] text-slate-400 font-medium">姿態估計與電路</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-7 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="text-[11px] text-slate-400">
+                    鍵盤：<span class="font-bold text-slate-700">WASD</span> 移動・靠近人員 <span class="font-bold text-slate-700">[E]</span> 互動
+                </div>
+                <button id="btn-start-game"
+                    class="w-full sm:w-auto px-7 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-blue-500/25 transition">
+                    踏入總裝工坊 →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD STATUS BAR -->
+    <header class="absolute top-4 left-4 right-4 z-30 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pointer-events-none">
+        <div class="glass-panel rounded-2xl px-5 py-3 flex items-center gap-5 pointer-events-auto border-l-4 border-l-blue-600 shadow-xl">
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">T-MINUS 試車倒數</span>
+                </div>
+                <div id="timer-display" class="font-mono-num text-xl font-extrabold text-slate-800">17:59:40</div>
+            </div>
+
+            <div class="h-8 w-px bg-slate-200"></div>
+
+            <div class="flex items-center gap-4 text-xs font-mono-num">
+                <div>
+                    <span class="text-slate-400 block text-[10px] font-sans">隊費帳戶</span>
+                    <span id="stat-budget" class="font-bold text-emerald-600 text-sm">$1,450 NTD</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] font-sans">團隊體力肝度</span>
+                    <span id="stat-morale" class="font-bold text-amber-600 text-sm">96%</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] font-sans">整箭整備度</span>
+                    <span id="stat-readiness" class="font-bold text-blue-600 text-sm">20%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl px-3 py-2 flex items-center gap-2 pointer-events-auto text-xs shadow-xl">
+            <button id="btn-sound-toggle" class="px-2.5 py-1.5 rounded-xl hover:bg-slate-100 text-slate-600 font-bold transition flex items-center gap-1">
+                <span id="sound-icon">🔊</span> <span id="sound-text">音效</span>
+            </button>
+            <div class="h-4 w-px bg-slate-200"></div>
+            <button id="btn-final-launch" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition shadow-sm">
+                🚀 裝箱拉往發射場
+            </button>
+        </div>
+    </header>
+
+    <!-- DIALOGUE DRAWER -->
+    <div id="dialogue-box" class="absolute bottom-6 left-1/2 -translate-x-1/2 w-11/12 max-w-2xl z-40 hidden pointer-events-auto">
+        <div class="glass-panel rounded-3xl p-5 md:p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <span id="diag-badge" class="px-2.5 py-0.5 rounded-full text-xs font-black text-white bg-blue-600">小組</span>
+                    <span id="diag-speaker" class="font-bold text-sm text-slate-800">名稱</span>
+                </div>
+                <button id="diag-btn-close" class="text-slate-400 hover:text-slate-600 text-xs px-2.5 py-1 rounded-lg bg-slate-100">ESC 關閉</button>
+            </div>
+
+            <p id="diag-text" class="text-slate-700 text-sm mt-3.5 leading-relaxed min-h-[44px]">讀取事件中...</p>
+            <div id="diag-options" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4"></div>
+        </div>
+    </div>
+
+    <!-- MISSION OUTCOME MODAL -->
+    <div id="result-modal" class="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center hidden p-4">
+        <div class="max-w-md w-full bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 text-center">
+            <div id="res-icon" class="text-5xl mb-2">🎉</div>
+            <h2 id="res-title" class="text-xl font-black text-slate-900">發射結果</h2>
+            <div id="res-badge" class="inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-3 bg-emerald-100 text-emerald-800 border border-emerald-300">
+                STATUS
+            </div>
+            <p id="res-desc" class="text-xs text-slate-600 leading-relaxed text-left bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-5"></p>
+            <button id="btn-restart" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm transition">
+                重返工坊
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== AUDIO SYNTH ==================== -->
+    <script>
+        class LabAudio {
+            constructor() { this.ctx = null; this.enabled = true; }
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+            toggle() { this.enabled = !this.enabled; return this.enabled; }
+            playTone(freq = 520, type = 'sine', duration = 0.08, volume = 0.1) {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.start(); osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            }
+            playClick() { this.playTone(850, 'triangle', 0.04, 0.06); }
+            playSelect() { this.playTone(960, 'sine', 0.1, 0.08); }
+            playSuccess() {
+                if (!this.enabled) return; this.init();
+                [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => this.playTone(f, 'sine', 0.12, 0.08), i * 80));
+            }
+            playAlarm() {
+                if (!this.enabled) return; this.init();
+                this.playTone(420, 'sawtooth', 0.18, 0.09);
+                setTimeout(() => this.playTone(560, 'sawtooth', 0.22, 0.09), 120);
+            }
+        }
+        const sfx = new LabAudio();
+    </script>
+
+    <!-- ==================== JSON 劇情與條件觸發引擎 ==================== -->
+    <script>
+        /**
+         * 規模化 JSON 資料庫：所有對話事件、NPC 與觸發條件
+         */
+        const STORY_EVENTS_DATABASE = {
+            "avionics_room": {
+                "npcId": "avionics_lead",
+                "npcName": "小陳",
+                "roleTitle": "航電組長",
+                "badgeColor": "bg-blue-600 text-white",
+                "events": [
+                    {
+                        "id": "av_boot_fail",
+                        "priority": 10,
+                        "conditions": { "requiresNotSolved": ["av_boot_fail"] },
+                        "speaker": "小陳 (航電工程師)",
+                        "text": "「隊長！上電燒測發現主控板陀螺儀 I2C 總線全部鎖死，加速規回傳 0xFF！明天清晨 5 點貨車就要來了！」",
+                        "options": [
+                            {
+                                "label": "A. 拿熱風槍換上備用晶片 (-$300, 耗費體力)",
+                                "effects": { "budget": -300, "morale": -5, "readiness": 25 },
+                                "reply": "「好！我立刻去熱風台吹焊，保證焊出最穩的接點！」",
+                                "unlockEvents": ["prop_ignition_sync"]
+                            },
+                            {
+                                "label": "B. 改用純氣壓計姿態演算法降級運算 (零開銷)",
+                                "effects": { "budget": 0, "morale": -8, "readiness": 15 },
+                                "reply": "「收到，我修改 flight control logic，只希望升空別 drift 得太誇張⋯⋯」"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "av_rf_telemetry",
+                        "priority": 5,
+                        "conditions": { "requiresSolved": ["av_boot_fail"], "minReadiness": 40 },
+                        "speaker": "小陳 (航電工程師)",
+                        "text": "「晶片搞定了！但現在地面遙測接收站 (Telemetry 433MHz) 的封包丟包率偏高，要不要加裝定向天線？」",
+                        "options": [
+                            {
+                                "label": "加裝 9dBi 八木天線延長桿 (-$150)",
+                                "effects": { "budget": -150, "morale": 2, "readiness": 15 },
+                                "reply": "「訊號信噪比上升了 14dB，這下在沙灘發射場也能收到完整數據！」"
+                            },
+                            {
+                                "label": "省錢，發射時讓隊員手舉天線瞄準",
+                                "effects": { "budget": 0, "morale": -6, "readiness": 8 },
+                                "reply": "「好吧⋯⋯那明天發射我負責拿著天線站在海風裡手動追火箭。」"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "av_idle",
+                        "priority": 0,
+                        "conditions": {},
+                        "speaker": "小陳 (航電工程師)",
+                        "text": "「航電系統狀態良好，雙重電子開傘線路已經 Arming Ready！」",
+                        "options": [
+                            { "label": "很好，繼續保持警戒。", "effects": {}, "reply": "「收到，隨時準備上架！」" }
+                        ]
+                    }
+                ]
+            },
+            "propulsion_room": {
+                "npcId": "propulsion_lead",
+                "npcName": "阿豪",
+                "roleTitle": "推進工程師",
+                "badgeColor": "bg-red-600 text-white",
+                "events": [
+                    {
+                        "id": "prop_leak_check",
+                        "priority": 10,
+                        "conditions": { "requiresNotSolved": ["prop_leak_check"] },
+                        "speaker": "阿豪 (推進負責人)",
+                        "text": "「Solid motor 固態藥柱填裝完畢，但喉部石墨裝入噴管後，O-Ring 擠壓率偏低，試車 60 bar 可能有密封失效風險！」",
+                        "options": [
+                            {
+                                "label": "A. 塗耐千度矽脂並雙墊圈迫緊 (-$100)",
+                                "effects": { "budget": -100, "morale": 2, "readiness": 25 },
+                                "reply": "「希望這道野雞工程能耐住 2200K 尾焰高溫！已固定妥當！」"
+                            },
+                            {
+                                "label": "B. 推進全體通宵，去實習工廠重新車削新噴喉",
+                                "effects": { "budget": -200, "morale": -18, "readiness": 30 },
+                                "reply": "「嗚嗚今晚通宵到底了⋯⋯我現在穿圍裙去車床間銑金屬！」"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "prop_ignition_sync",
+                        "priority": 8,
+                        "conditions": { "requiresSolved": ["prop_leak_check", "av_boot_fail"] },
+                        "speaker": "阿豪 (推進負責人)",
+                        "text": "「航電的電發火管訊號線接過來了！電阻量測 1.2 歐姆，點火母火藥要不要做二重冗餘防啞火？」",
+                        "options": [
+                            {
+                                "label": "加入雙電子點火頭冗餘配線 (-$80)",
+                                "effects": { "budget": -80, "morale": 4, "readiness": 20 },
+                                "reply": "「雙重安全點火建立！絕不會在倒數結束時啞火冷場！」"
+                            },
+                            {
+                                "label": "維持單點火管即可，節省物資",
+                                "effects": { "budget": 0, "morale": 0, "readiness": 10 },
+                                "reply": "「祈禱明天沙灘上海風濕氣不要受潮引信！」"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "prop_idle",
+                        "priority": 0,
+                        "conditions": {},
+                        "speaker": "阿豪 (推進負責人)",
+                        "text": "「發動機已封裝完成並鎖定在發射軌道夾具上。就等離架口令！」",
+                        "options": [
+                            { "label": "辛苦了，注意推進劑防火規範。", "effects": {}, "reply": "「明白，滅火器都已就位備便！」" }
+                        ]
+                    }
+                ]
+            },
+            "structures_room": {
+                "npcId": "structures_lead",
+                "npcName": "林學姐",
+                "roleTitle": "結構碳纖組",
+                "badgeColor": "bg-emerald-600 text-white",
+                "events": [
+                    {
+                        "id": "struct_cf_bubble",
+                        "priority": 10,
+                        "conditions": { "requiresNotSolved": ["struct_cf_bubble"] },
+                        "speaker": "林學姐 (結構領隊)",
+                        "text": "「剛才抽真空幫浦跳電了！這批碳纖維筒身環氧樹脂快硬化了，起泡的話抗剪力會直接打折！」",
+                        "options": [
+                            {
+                                "label": "A. 全員戴上手套手工刮膠補壓真空 (-$0)",
+                                "effects": { "budget": 0, "morale": -6, "readiness": 20 },
+                                "reply": "「大家一起上！用刮刀推掉氣泡，趕在膠化前固定！」"
+                            },
+                            {
+                                "label": "B. 整筒報廢，換備用鋁合金薄管 (-$600)",
+                                "effects": { "budget": -600, "morale": 6, "readiness": 25 },
+                                "reply": "「重量雖然重了 400g，但剛性保證頂得住 15G 最大動壓過載！」"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "struct_fin_align",
+                        "priority": 6,
+                        "conditions": { "requiresSolved": ["struct_cf_bubble"], "minReadiness": 50 },
+                        "speaker": "林學姐 (結構領隊)",
+                        "text": "「尾翼 4 片碳纖夾板黏接完畢，但用雷射水準儀測量發現有 0.5 度的偏角誤差，這會讓火箭產生自旋滾轉！」",
+                        "options": [
+                            {
+                                "label": "重新加熱環氧樹脂精準校正至 0 度 (-$120)",
+                                "effects": { "budget": -120, "morale": -4, "readiness": 20 },
+                                "reply": "「雷射校正完成！保證彈道如標槍一樣筆直！」"
+                            },
+                            {
+                                "label": "不修正，就當作自旋穩定 (Roll Stabilization)",
+                                "effects": { "budget": 0, "morale": 2, "readiness": 10 },
+                                "reply": "「哈哈，真有你的，化 Bug 為 Feature 的航太傳統！」"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "struct_idle",
+                        "priority": 0,
+                        "conditions": {},
+                        "speaker": "林學姐 (結構領隊)",
+                        "text": "「箭體結構強度已通過動態共振敲擊測試，完全能承受超音速風阻！」",
+                        "options": [
+                            { "label": "很好，結構是火箭的骨肉！", "effects": {}, "reply": "「收到，準備運往發射架！」" }
+                        ]
+                    }
+                ]
+            },
+            "central_courtyard": {
+                "npcId": "captain_lead",
+                "npcName": "老張",
+                "roleTitle": "總隊長",
+                "badgeColor": "bg-purple-600 text-white",
+                "events": [
+                    {
+                        "id": "lead_budget_crisis",
+                        "priority": 10,
+                        "conditions": { "requiresNotSolved": ["lead_budget_crisis"] },
+                        "speaker": "老張 (社團隊長)",
+                        "text": "「載發射架的小貨車司機說清晨過路費跟油錢要先給現金，系辦經費還卡在審核⋯⋯帳戶見底了！」",
+                        "options": [
+                            {
+                                "label": "A. 隊長自掏腰包先墊付 (-$400)",
+                                "effects": { "budget": -400, "morale": 10, "readiness": 10 },
+                                "reply": "「嗚嗚⋯⋯為了火箭夢，這個月只能每天啃科學麵了！」"
+                            },
+                            {
+                                "label": "B. 發 Threads 脆文尋求畢業系友贊助 (+$600)",
+                                "effects": { "budget": 600, "morale": -8, "readiness": 5 },
+                                "reply": "「太神啦！真有竹科工程師學長轉帳力挺學生火箭隊！」"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "lead_safety_review",
+                        "priority": 7,
+                        "conditions": { "minReadiness": 60, "requiresNotSolved": ["lead_safety_review"] },
+                        "speaker": "老張 (社團隊長)",
+                        "text": "「發射場安全半徑需要 500 公尺淨空，海巡署要求我們指派兩位隊員擔任外圍管制員！」",
+                        "options": [
+                            {
+                                "label": "安排輪值哨，保證發射絕對安全",
+                                "effects": { "budget": 0, "morale": -4, "readiness": 15 },
+                                "reply": "「對講機頻道已與海巡連線，安全第一！」"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "lead_idle",
+                        "priority": 0,
+                        "conditions": {},
+                        "speaker": "老張 (社團隊長)",
+                        "text": "「各組狀況差不多齊全了！只要你一聲令下，我們就呼叫貨車裝箱！」",
+                        "options": [
+                            { "label": "收到，我再做最後一輪巡檢！", "effects": {}, "reply": "「隨時聽候差遣！」" }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // 遊戲核心數據狀態
+        const gameState = {
+            budget: 1450,
+            morale: 96,
+            readiness: 20,
+            countdownSeconds: 18 * 3600 - 20,
+            playerRole: "SE",
+            playerTitle: "系統整合 Lead",
+            solvedEvents: new Set(),
+            keys: { w:false, a:false, s:false, d:false },
+            targetPoint: null,
+            nearbyNPC: null,
+            activeDialogue: null
+        };
+
+        /**
+         * 條件評估器：根據當前 gameState 挑選出該區域最合適的事件
+         */
+        function getEligibleEvent(roomId) {
+            const roomData = STORY_EVENTS_DATABASE[roomId];
+            if (!roomData) return null;
+
+            const events = [...roomData.events].sort((a, b) => b.priority - a.priority);
+
+            for (const ev of events) {
+                const cond = ev.conditions;
+                if (!cond) return ev;
+
+                if (cond.requiresNotSolved && cond.requiresNotSolved.some(id => gameState.solvedEvents.has(id))) {
+                    continue;
+                }
+                if (cond.requiresSolved && !cond.requiresSolved.every(id => gameState.solvedEvents.has(id))) {
+                    continue;
+                }
+                if (cond.minReadiness !== undefined && gameState.readiness < cond.minReadiness) {
+                    continue;
+                }
+                if (cond.maxBudget !== undefined && gameState.budget > cond.maxBudget) {
+                    continue;
+                }
+                if (cond.roleSpecific && cond.roleSpecific !== gameState.playerRole) {
+                    continue;
+                }
+                return ev;
+            }
+            return null;
+        }
+
+        function updateMetricsUI() {
+            document.getElementById('stat-budget').innerText = `$${gameState.budget.toLocaleString()} NTD`;
+            document.getElementById('stat-morale').innerText = `${Math.max(0, gameState.morale)}%`;
+            document.getElementById('stat-readiness').innerText = `${Math.min(100, gameState.readiness)}%`;
+        }
+    </script>
+
+    <!-- ==================== THREE.JS 3D 世界建構 ==================== -->
+    <script>
+        const canvas = document.getElementById('webgl-canvas');
+        const badgeContainer = document.getElementById('badge-container');
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf1f5f9);
+
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = 14.5;
+        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+        camera.position.set(24, 28, 24);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // 柔和攝影棚採光
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xcfd8dc, 0.88);
+        scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0.85);
+        sunLight.position.set(20, 35, 18);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 120;
+        const shadowD = 22;
+        sunLight.shadow.camera.left = -shadowD;
+        sunLight.shadow.camera.right = shadowD;
+        sunLight.shadow.camera.top = shadowD;
+        sunLight.shadow.camera.bottom = -shadowD;
+        scene.add(sunLight);
+
+        const fillLight = new THREE.PointLight(0x38bdf8, 0.4, 25);
+        fillLight.position.set(-10, 8, -6);
+        scene.add(fillLight);
+
+        const labGroup = new THREE.Group();
+
+        // 地面：灰色耐磨環氧樹脂地坪
+        const floorGeo = new THREE.BoxGeometry(32, 0.4, 26);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.position.set(0, -0.2, 0);
+        floor.receiveShadow = true;
+        labGroup.add(floor);
+
+        const grid = new THREE.GridHelper(30, 15, 0xcbd5e1, 0xe2e8f0);
+        grid.position.y = 0.02;
+        labGroup.add(grid);
+
+        // 材質庫
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
+        const wallAvMat = new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.6 }); // 航電藍
+        const wallPropMat = new THREE.MeshStandardMaterial({ color: 0xfee2e2, roughness: 0.6 }); // 推進淺紅
+        const wallStructMat = new THREE.MeshStandardMaterial({ color: 0xdcfce7, roughness: 0.6 }); // 結構淡綠
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.5, roughness: 0.3 });
+        const matWoodTop = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.3 });
+        const matSteelLeg = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.2 });
+
+        function createWall(w, h, depth, x, y, z, mat = wallMat) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, depth), mat);
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true;
+            mesh.castShadow = true;
+            labGroup.add(mesh);
+            return mesh;
+        }
+
+        // 門框結構輔助
+        function createDoorFrame(x, z, rotY = 0) {
+            const fGroup = new THREE.Group();
+            const pillarL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.8, 0.25), frameMat);
+            pillarL.position.set(-1.4, 1.9, 0);
+            const pillarR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.8, 0.25), frameMat);
+            pillarR.position.set(1.4, 1.9, 0);
+            const lintel = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.25, 0.25), frameMat);
+            lintel.position.set(0, 3.7, 0);
+            fGroup.add(pillarL, pillarR, lintel);
+            fGroup.rotation.y = rotY;
+            fGroup.position.set(x, 0, z);
+            labGroup.add(fGroup);
+        }
+
+        /* 
+           ======================================================
+           建築隔間（三面環抱的小房間格局，對應手繪圖稿）：
+           - 外圍後總牆：Z = -12.5 (X: -15 ~ 15)
+           - 外圍左總牆：X = -15.5 (Z: -12.5 ~ 12)
+           - 外圍右總牆：X = 15.5 (Z: -12.5 ~ 12)
+           
+           小房間 1 (正後方 - 推進間)：Z 從 -12.5 到 -4.5，X: -5.0 ~ 5.0
+           小房間 2 (左翼 - 航電間)：X: -15.5 ~ -6.0，Z: -12.5 到 -2.5
+           小房間 3 (右翼 - 結構間)：X: 6.0 ~ 15.5，Z: -12.5 到 -2.5
+           中央中庭：X: -5.5 ~ 5.5, Z: -3.0 ~ 11.0 (隊長指揮 + 總裝架)
+           ======================================================
+        */
+        // 後方總外牆
+        createWall(31, 4.2, 0.4, 0, 2.1, -12.5, wallMat);
+        // 左側總外牆
+        createWall(0.4, 4.2, 24, -15.5, 2.1, 0, wallMat);
+        // 右側總外牆
+        createWall(0.4, 4.2, 24, 15.5, 2.1, 0, wallMat);
+
+        // --- 1. 後方推進小間 (Propulsion Bay) ---
+        // 推進左右隔間牆
+        createWall(0.3, 4.2, 8.0, -5.2, 2.1, -8.5, wallPropMat);
+        createWall(0.3, 4.2, 8.0, 5.2, 2.1, -8.5, wallPropMat);
+        // 推進間前門牆 (留下中央 3.0m 大門洞)
+        createWall(3.6, 4.2, 0.3, -3.4, 2.1, -4.5, wallPropMat);
+        createWall(3.6, 4.2, 0.3, 3.4, 2.1, -4.5, wallPropMat);
+        createDoorFrame(0, -4.5, 0);
+
+        // --- 2. 左側航電小間 (Avionics Lab) ---
+        // 航電前隔間牆 (保留右側門口)
+        createWall(6.0, 4.2, 0.3, -12.5, 2.1, -2.5, wallAvMat);
+        createWall(0.3, 4.2, 10.0, -5.8, 2.1, -7.5, wallAvMat);
+        createDoorFrame(-7.2, -2.5, 0);
+
+        // --- 3. 右側結構與複材小間 (Structures Bay) ---
+        // 結構前隔間牆 (保留左側門口)
+        createWall(6.0, 4.2, 0.3, 12.5, 2.1, -2.5, wallStructMat);
+        createWall(0.3, 4.2, 10.0, 5.8, 2.1, -7.5, wallStructMat);
+        createDoorFrame(7.2, -2.5, 0);
+
+        // 工作桌工廠
+        function buildWorkbench(x, z, rotY, w = 3.8, d = 1.8, propsBuilder = null) {
+            const g = new THREE.Group();
+            const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.22, d), matWoodTop);
+            top.position.y = 1.15;
+            top.castShadow = true; top.receiveShadow = true;
+            g.add(top);
+
+            const legGeo = new THREE.BoxGeometry(0.16, 1.15, 0.16);
+            [ [-w/2 + 0.2, -d/2 + 0.2], [w/2 - 0.2, -d/2 + 0.2], [-w/2 + 0.2, d/2 - 0.2], [w/2 - 0.2, d/2 - 0.2] ].forEach(([lx, lz]) => {
+                const leg = new THREE.Mesh(legGeo, matSteelLeg);
+                leg.position.set(lx, 0.575, lz);
+                leg.castShadow = true;
+                g.add(leg);
+            });
+
+            if (propsBuilder) propsBuilder(g);
+            g.rotation.y = rotY;
+            g.position.set(x, 0, z);
+            labGroup.add(g);
+            return g;
+        }
+
+        // 航電組室內工作桌（貼左外牆）
+        buildWorkbench(-14.2, -7.5, Math.PI / 2, 4.0, 1.8, (g) => {
+            const osc = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.7, 0.6), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+            osc.position.set(-0.8, 1.6, -0.2);
+            const oscScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.45), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+            oscScreen.position.set(-0.8, 1.6, 0.11);
+            g.add(osc, oscScreen);
+            const board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.8), new THREE.MeshLambertMaterial({ color: 0x0284c7 }));
+            board.position.set(0.6, 1.3, 0.1);
+            g.add(board);
+        });
+
+        // 推進組室內工作桌（貼後總牆）
+        buildWorkbench(0, -11.2, 0, 4.6, 1.8, (g) => {
+            const tankMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.6 });
+            const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 1.8, 16), tankMat);
+            tank.position.set(-1.4, 1.9, -0.2);
+            tank.castShadow = true;
+            g.add(tank);
+            const valve = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.4), new THREE.MeshLambertMaterial({ color: 0xd97706 }));
+            valve.position.set(0.8, 1.45, 0.1);
+            g.add(valve);
+        });
+
+        // 結構組室內工作桌（貼右外牆）
+        buildWorkbench(14.2, -7.5, -Math.PI / 2, 4.0, 1.8, (g) => {
+            const tubeMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.3 });
+            const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 3.2, 16), tubeMat);
+            tube.rotation.z = Math.PI / 2;
+            tube.position.set(0, 1.55, 0);
+            g.add(tube);
+        });
+
+        // 中央中庭：總隊長辦公桌
+        buildWorkbench(0, 5.0, 0, 3.6, 1.8, (g) => {
+            const laptop = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.6), new THREE.MeshLambertMaterial({ color: 0x64748b }));
+            laptop.position.set(-0.6, 1.3, 0);
+            const scr = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.05), new THREE.MeshLambertMaterial({ color: 0x0f172a }));
+            scr.position.set(-0.6, 1.55, -0.3);
+            g.add(laptop, scr);
+            const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.24, 12), new THREE.MeshLambertMaterial({ color: 0xef4444 }));
+            cup.position.set(0.8, 1.4, 0.2);
+            g.add(cup);
+        });
+
+        // 中央中庭右側：全尺寸探空火箭總裝測試架
+        const rocketStandGroup = new THREE.Group();
+        const rBody = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 5.6, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }));
+        rBody.position.y = 3.0;
+        rBody.castShadow = true;
+        rocketStandGroup.add(rBody);
+
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.48, 1.3, 16), new THREE.MeshStandardMaterial({ color: 0x2563eb }));
+        nose.position.y = 6.45;
+        rocketStandGroup.add(nose);
+
+        for (let i = 0; i < 4; i++) {
+            const f = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 0.8), new THREE.MeshLambertMaterial({ color: 0x2563eb }));
+            f.rotation.y = (Math.PI / 2) * i;
+            f.position.set(0, 1.0, 0);
+            f.translateZ(0.6);
+            rocketStandGroup.add(f);
+        }
+        rocketStandGroup.position.set(7.5, 0, 4.5);
+        labGroup.add(rocketStandGroup);
+
+        // 中央中庭左側：回收降落傘摺疊長桌
+        buildWorkbench(-7.5, 4.5, 0, 3.4, 1.8, (g) => {
+            const cloth1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 1.0), new THREE.MeshLambertMaterial({ color: 0xf97316 }));
+            cloth1.position.set(-0.5, 1.32, 0);
+            const cloth2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.8), new THREE.MeshLambertMaterial({ color: 0x14b8a6 }));
+            cloth2.position.set(0.6, 1.3, 0.1);
+            g.add(cloth1, cloth2);
+        });
+
+        scene.add(labGroup);
+
+        // 人物模型生成器
+        function createVoxelCharacter(shirtColorHex, pantsColorHex = 0x334155, hairColorHex = 0x1e293b) {
+            const charGroup = new THREE.Group();
+            const matSkin = new THREE.MeshLambertMaterial({ color: 0xfcd34d });
+            const matShirt = new THREE.MeshLambertMaterial({ color: shirtColorHex });
+            const matPants = new THREE.MeshLambertMaterial({ color: pantsColorHex });
+            const matHair = new THREE.MeshLambertMaterial({ color: hairColorHex });
+
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.75, 0.4), matShirt);
+            torso.position.y = 1.0;
+            torso.castShadow = true;
+            charGroup.add(torso);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.45), matSkin);
+            head.position.y = 1.62;
+            head.castShadow = true;
+            charGroup.add(head);
+
+            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.2, 0.48), matHair);
+            hair.position.y = 1.82;
+            charGroup.add(hair);
+
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.65, 0.24), matPants);
+            leftLeg.position.set(-0.16, 0.35, 0);
+            leftLeg.castShadow = true;
+            charGroup.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.65, 0.24), matPants);
+            rightLeg.position.set(0.16, 0.35, 0);
+            rightLeg.castShadow = true;
+            charGroup.add(rightLeg);
+
+            charGroup.userData = { leftLeg, rightLeg, walkCycle: 0 };
+            return charGroup;
+        }
+
+        // 玩家主角
+        const player = createVoxelCharacter(0xf59e0b);
+        player.position.set(0, 0, 0);
+        scene.add(player);
+
+        // 各小房間所屬的 NPC 實例配置
+        const NPC_SPAWNS = [
+            {
+                roomId: "avionics_room",
+                shirtColor: 0x2563eb,
+                pos: [-11.8, 0, -7.5],
+                rot: Math.PI / 2
+            },
+            {
+                roomId: "propulsion_room",
+                shirtColor: 0xdc2626,
+                pos: [0, 0, -8.8],
+                rot: 0
+            },
+            {
+                roomId: "structures_room",
+                shirtColor: 0x059669,
+                pos: [11.8, 0, -7.5],
+                rot: -Math.PI / 2
+            },
+            {
+                roomId: "central_courtyard",
+                shirtColor: 0x9333ea,
+                pos: [0, 0, 3.2],
+                rot: Math.PI
+            }
+        ];
+
+        const activeNPCs = [];
+        NPC_SPAWNS.forEach(sp => {
+            const data = STORY_EVENTS_DATABASE[sp.roomId];
+            const mesh = createVoxelCharacter(sp.shirtColor);
+            mesh.position.set(sp.pos[0], sp.pos[1], sp.pos[2]);
+            mesh.rotation.y = sp.rot;
+            scene.add(mesh);
+
+            activeNPCs.push({
+                roomId: sp.roomId,
+                npcId: data.npcId,
+                name: data.npcName,
+                role: data.roleTitle,
+                colorClass: data.badgeColor,
+                mesh: mesh
+            });
+        });
+
+        function setupHUDProjectedBadges() {
+            const playerTag = document.createElement('div');
+            playerTag.className = 'hud-badge bg-amber-500 text-white';
+            playerTag.innerText = `你 | ${gameState.playerTitle}`;
+            badgeContainer.appendChild(playerTag);
+            player.userData.tagEl = playerTag;
+
+            activeNPCs.forEach(npc => {
+                const tag = document.createElement('div');
+                tag.className = `hud-badge ${npc.colorClass}`;
+                tag.innerText = `${npc.name} | ${npc.role}`;
+                badgeContainer.appendChild(tag);
+                npc.tagEl = tag;
+
+                const hint = document.createElement('div');
+                hint.className = 'interact-pill px-2 py-0.5 rounded-full bg-slate-900 text-white font-bold text-[10px] hidden shadow-md';
+                hint.innerText = '[E 互動]';
+                badgeContainer.appendChild(hint);
+                npc.hintEl = hint;
+            });
+        }
+        setupHUDProjectedBadges();
+
+        const vProj = new THREE.Vector3();
+        function updateProjectedBadges() {
+            player.getWorldPosition(vProj);
+            vProj.y += 2.2;
+            vProj.project(camera);
+            player.userData.tagEl.style.left = `${(vProj.x * 0.5 + 0.5) * window.innerWidth}px`;
+            player.userData.tagEl.style.top = `${(-vProj.y * 0.5 + 0.5) * window.innerHeight}px`;
+
+            activeNPCs.forEach(npc => {
+                npc.mesh.getWorldPosition(vProj);
+                vProj.y += 2.2;
+                vProj.project(camera);
+                const x = (vProj.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-vProj.y * 0.5 + 0.5) * window.innerHeight;
+                npc.tagEl.style.left = `${x}px`;
+                npc.tagEl.style.top = `${y}px`;
+                npc.hintEl.style.left = `${x}px`;
+                npc.hintEl.style.top = `${y - 12}px`;
+            });
+        }
+    </script>
+
+    <!-- ==================== UI 邏輯與互動事件驅動 ==================== -->
+    <script>
+        const diagBox = document.getElementById('dialogue-box');
+        const diagBadge = document.getElementById('diag-badge');
+        const diagSpeaker = document.getElementById('diag-speaker');
+        const diagText = document.getElementById('diag-text');
+        const diagOptions = document.getElementById('diag-options');
+        const diagBtnClose = document.getElementById('diag-btn-close');
+
+        function openRoomDialogue(npc) {
+            const ev = getEligibleEvent(npc.roomId);
+            if (!ev) return;
+
+            gameState.activeDialogue = { npc, event: ev };
+            sfx.playSelect();
+
+            const rData = STORY_EVENTS_DATABASE[npc.roomId];
+            diagBadge.className = `px-2.5 py-0.5 rounded-full text-xs font-black ${rData.badgeColor}`;
+            diagBadge.innerText = rData.roleTitle;
+            diagSpeaker.innerText = ev.speaker;
+            diagText.innerText = ev.text;
+            diagOptions.innerHTML = '';
+
+            ev.options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = 'p-3 rounded-2xl border text-xs font-bold text-left transition flex flex-col justify-center bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-400 text-slate-800 shadow-sm';
+                btn.innerText = opt.label;
+                btn.onclick = () => handleChoiceSelection(npc, ev, opt);
+                diagOptions.appendChild(btn);
+            });
+
+            diagBox.classList.remove('hidden');
+        }
+
+        function handleChoiceSelection(npc, ev, opt) {
+            sfx.playTone(740, 'sine', 0.1);
+            if (opt.effects) {
+                if (opt.effects.budget) gameState.budget += opt.effects.budget;
+                if (opt.effects.morale) gameState.morale += opt.effects.morale;
+                if (opt.effects.readiness) gameState.readiness += opt.effects.readiness;
+            }
+
+            gameState.solvedEvents.add(ev.id);
+            if (opt.unlockEvents) {
+                opt.unlockEvents.forEach(uId => gameState.solvedEvents.delete(uId));
+            }
+            updateMetricsUI();
+
+            diagText.innerText = opt.reply;
+            diagOptions.innerHTML = `
+                <button onclick="closeDialogue()" class="col-span-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition">
+                    清楚了，前往下個隔間工坊 (關閉)
+                </button>
+            `;
+        }
+
+        function closeDialogue() {
+            diagBox.classList.add('hidden');
+            gameState.activeDialogue = null;
+        }
+        diagBtnClose.onclick = closeDialogue;
+
+        // 試車發射檢驗
+        document.getElementById('btn-final-launch').onclick = () => {
+            const modal = document.getElementById('result-modal');
+            const rIcon = document.getElementById('res-icon');
+            const rTitle = document.getElementById('res-title');
+            const rBadge = document.getElementById('res-badge');
+            const rDesc = document.getElementById('res-desc');
+
+            modal.classList.remove('hidden');
+
+            if (gameState.readiness >= 75) {
+                sfx.playSuccess();
+                rIcon.innerText = '🚀';
+                rTitle.innerText = '試車發射大成功！探空二號破雲！';
+                rBadge.className = 'inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-3 bg-emerald-100 text-emerald-800 border border-emerald-300';
+                rBadge.innerText = 'MISSION APOGEE: 1,650 METERS';
+                rDesc.innerText = `整備度達到 ${gameState.readiness}%！各小間通力合作，固態發動機平穩燃燒、碳纖筒身抵抗住強大剪切力，頂空火藥精準彈射主傘！全組在沙灘上尋回完整黑盒子！`;
+            } else {
+                sfx.playAlarm();
+                rIcon.innerText = '💥';
+                rTitle.innerText = '半空中斷！發射中止與殘骸尋回';
+                rBadge.className = 'inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-3 bg-red-100 text-red-800 border border-red-300';
+                rBadge.innerText = 'MISSION ABORTED';
+                rDesc.innerText = `目前整備度僅 ${gameState.readiness}%。由於部分獨立小間未完成巡檢排查，火箭在穿過低空音障時姿態發散。收拾殘骸回工坊，準備下週向教授提交檢討報告！`;
+            }
+        };
+
+        document.getElementById('btn-restart').onclick = () => window.location.reload();
+
+        // 鍵盤移動與操控
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || k === 'arrowup') gameState.keys.w = true;
+            if (k === 's' || k === 'arrowdown') gameState.keys.s = true;
+            if (k === 'a' || k === 'arrowleft') gameState.keys.a = true;
+            if (k === 'd' || k === 'arrowright') gameState.keys.d = true;
+
+            if (k === 'e') {
+                if (gameState.activeDialogue) closeDialogue();
+                else if (gameState.nearbyNPC) openRoomDialogue(gameState.nearbyNPC);
+            }
+            if (k === 'escape') closeDialogue();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || k === 'arrowup') gameState.keys.w = false;
+            if (k === 's' || k === 'arrowdown') gameState.keys.s = false;
+            if (k === 'a' || k === 'arrowleft') gameState.keys.a = false;
+            if (k === 'd' || k === 'arrowright') gameState.keys.d = false;
+        });
+
+        // 點擊地面導航
+        const raycaster = new THREE.Raycaster();
+        const mouseVec = new THREE.Vector2();
+        const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+        window.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('#cover-screen') || e.target.closest('header') || e.target.closest('#dialogue-box') || e.target.closest('#result-modal')) {
+                return;
+            }
+            mouseVec.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouseVec, camera);
+
+            const hitPoint = new THREE.Vector3();
+            if (raycaster.ray.intersectPlane(floorPlane, hitPoint)) {
+                hitPoint.x = Math.max(-14, Math.min(14, hitPoint.x));
+                hitPoint.z = Math.max(-11, Math.min(11, hitPoint.z));
+                gameState.targetPoint = hitPoint;
+                sfx.playClick();
+
+                const ripple = document.createElement('div');
+                ripple.className = 'click-ripple';
+                ripple.style.left = `${e.clientX}px`;
+                ripple.style.top = `${e.clientY}px`;
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 450);
+            }
+        });
+
+        // 角色選擇與起始
+        document.querySelectorAll('.role-btn').forEach(btn => {
+            btn.onclick = () => {
+                sfx.playClick();
+                document.querySelectorAll('.role-btn').forEach(b => {
+                    b.className = 'role-btn py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-white border-slate-200 text-slate-600 hover:border-slate-300';
+                });
+                btn.className = 'role-btn active py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-blue-50 border-blue-500 text-blue-900';
+                gameState.playerRole = btn.dataset.role;
+                gameState.playerTitle = btn.dataset.title;
+            };
+        });
+
+        document.getElementById('btn-start-game').onclick = () => {
+            const name = document.getElementById('input-player-name').value.trim() || '整合 Lead';
+            player.userData.tagEl.innerText = `${name} | ${gameState.playerTitle}`;
+            sfx.playSelect();
+
+            const cover = document.getElementById('cover-screen');
+            cover.style.opacity = '0';
+            setTimeout(() => cover.classList.add('hidden'), 500);
+        };
+
+        const btnSound = document.getElementById('btn-sound-toggle');
+        btnSound.onclick = () => {
+            const on = sfx.toggle();
+            document.getElementById('sound-icon').innerText = on ? '🔊' : '🔇';
+            document.getElementById('sound-text').innerText = on ? '音效' : '靜音';
+        };
+
+        setInterval(() => {
+            if (gameState.countdownSeconds > 0) {
+                gameState.countdownSeconds--;
+                const h = String(Math.floor(gameState.countdownSeconds / 3600)).padStart(2, '0');
+                const m = String(Math.floor((gameState.countdownSeconds % 3600) / 60)).padStart(2, '0');
+                const s = String(gameState.countdownSeconds % 60).padStart(2, '0');
+                document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
+            }
+        }, 1000);
+
+        // 主迴圈
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            let mx = 0; let mz = 0;
+            const speed = 7.5 * delta;
+
+            if (gameState.keys.w) { mx -= speed; mz -= speed; }
+            if (gameState.keys.s) { mx += speed; mz += speed; }
+            if (gameState.keys.a) { mx -= speed; mz += speed; }
+            if (gameState.keys.d) { mx += speed; mz += speed; }
+
+            if (gameState.targetPoint) {
+                const dx = gameState.targetPoint.x - player.position.x;
+                const dz = gameState.targetPoint.z - player.position.z;
+                const dist = Math.hypot(dx, dz);
+                if (dist > 0.25) {
+                    mx = (dx / dist) * speed;
+                    mz = (dz / dist) * speed;
+                } else {
+                    gameState.targetPoint = null;
+                }
+            }
+
+            if (Math.abs(mx) > 0.0001 || Math.abs(mz) > 0.0001) {
+                player.position.x = Math.max(-14, Math.min(14, player.position.x + mx));
+                player.position.z = Math.max(-11.5, Math.min(11.5, player.position.z + mz));
+                player.rotation.y = Math.atan2(mx, mz);
+
+                player.userData.walkCycle += delta * 15;
+                const legAngle = Math.sin(player.userData.walkCycle) * 0.5;
+                player.userData.leftLeg.rotation.x = legAngle;
+                player.userData.rightLeg.rotation.x = -legAngle;
+            } else {
+                player.userData.leftLeg.rotation.x = 0;
+                player.userData.rightLeg.rotation.x = 0;
+            }
+
+            // 檢查是否靠近小房間的 NPC
+            let closeOne = null;
+            activeNPCs.forEach(npc => {
+                const dist = player.position.distanceTo(npc.mesh.position);
+                if (dist < 3.0) {
+                    closeOne = npc;
+                    npc.hintEl.classList.remove('hidden');
+                } else {
+                    npc.hintEl.classList.add('hidden');
+                }
+            });
+            gameState.nearbyNPC = closeOne;
+
+            updateProjectedBadges();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            const asp = window.innerWidth / window.innerHeight;
+            camera.left = -d * asp;
+            camera.right = d * asp;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = () => animate();
+    </script>
+</body>
+</html>

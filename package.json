@@ -1,0 +1,9 @@
+{
+  "name": "rocket24hr-lab",
+  "version": "2.0.0",
+  "description": "學生火箭工坊模擬遊戲",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  }
+}
