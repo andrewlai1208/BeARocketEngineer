@@ -51,7 +51,7 @@ export function createVoxelCharacter(shirtColorHex) {
   return char;
 }
 
-// 走路雙腿擺動更新
+// 通用走路雙腿擺動更新
 export function updateCharacterWalk(char, isMoving, delta) {
   if (!char || !char.userData || !char.userData.leftLeg) return;
   if (isMoving) {
@@ -65,7 +65,7 @@ export function updateCharacterWalk(char, isMoving, delta) {
   }
 }
 
-// 辦公室主場景 (Office)
+// 1. 辦公室主場景 (Office)
 export function initWorkshopScene(canvas) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xfafafa);
@@ -82,7 +82,6 @@ export function initWorkshopScene(canvas) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  // 採光系統
   const hemiLight = new THREE.HemisphereLight(0xffffcc, 0xFFF3BF, 0.8);
   scene.add(hemiLight);
 
@@ -115,7 +114,6 @@ export function initWorkshopScene(canvas) {
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6 });
   const matWood = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.35, metalness: 0.05 });
   const matSteel = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
-  const barricadeMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 }); // 施工警示黃
 
   const wallColliders = [];
   function addSolidWall(w, h, depth, x, y, z) {
@@ -129,7 +127,7 @@ export function initWorkshopScene(canvas) {
     return m;
   }
 
-  function addDoorLintel(x, z, rotY = 0, doorWidth = 3.2, labelText = '', labelBg = '#2563eb', isBlocked = false) {
+  function addDoorLintel(x, z, rotY = 0, doorWidth = 3.2, labelText = '', labelBg = '#2563eb') {
     const f = new THREE.Group();
     const half = doorWidth / 2;
     const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4.0, 0.25), frameMat);
@@ -147,17 +145,6 @@ export function initWorkshopScene(canvas) {
       f.add(sign);
     }
 
-    // 封閉狀態：在門口架起雙層施工黃色警示欄杆
-    if (isBlocked) {
-      const tape1 = new THREE.Mesh(new THREE.BoxGeometry(doorWidth - 0.2, 0.2, 0.08), barricadeMat);
-      tape1.position.set(0, 1.2, 0);
-      tape1.castShadow = true;
-      const tape2 = new THREE.Mesh(new THREE.BoxGeometry(doorWidth - 0.2, 0.2, 0.08), barricadeMat);
-      tape2.position.set(0, 0.55, 0);
-      tape2.castShadow = true;
-      f.add(tape1, tape2);
-    }
-
     f.rotation.y = rotY;
     f.position.set(x, 0, z);
     labGroup.add(f);
@@ -167,21 +154,17 @@ export function initWorkshopScene(canvas) {
   addSolidWall(37.5, 4.2, 0.4, 0, 2.1, -16.5);
   addSolidWall(37.5, 1.2, 0.4, 0, 0.6, 14.5);
 
-  // 左外牆：測試廠房大門（架設封閉欄杆）
+  // 左外牆：通往「測試廠房」
   addSolidWall(0.4, 4.2, 16.9, -18.5, 2.1, -8.05);
   addSolidWall(0.4, 4.2, 10.9, -18.5, 2.1, 9.05);
-  addDoorLintel(-18.5, 2.0, Math.PI / 2, 3.2, '測試廠房', '#0284c7', true);
+  addDoorLintel(-18.5, 2.0, Math.PI / 2, 3.2, '測試廠房', '#0284c7');
   addSolidWall(0.4, 0.2, 3.2, -18.5, 4.1, 2.0);
-  // 實體碰撞封閉（阻止穿越左門走出地板）
-  wallColliders.push({ minX: -19.0, maxX: -17.5, minZ: 0.4, maxZ: 3.6 });
 
-  // 右外牆：加工車間大門（架設封閉欄杆）
+  // 右外牆：通往「加工車間」
   addSolidWall(0.4, 4.2, 16.9, 18.5, 2.1, -8.05);
   addSolidWall(0.4, 4.2, 10.9, 18.5, 2.1, 9.05);
-  addDoorLintel(18.5, 2.0, -Math.PI / 2, 3.2, '加工車間', '#d97706', true);
+  addDoorLintel(18.5, 2.0, -Math.PI / 2, 3.2, '加工車間', '#d97706');
   addSolidWall(0.4, 0.2, 3.2, 18.5, 4.1, 2.0);
-  // 實體碰撞封閉（阻止穿越右門走出地板）
-  wallColliders.push({ minX: 17.5, maxX: 19.0, minZ: 0.4, maxZ: 3.6 });
 
   // 內部各小組隔間
   addSolidWall(0.3, 4.2, 11.0, -6.5, 2.1, -11.0);
@@ -237,11 +220,114 @@ export function initWorkshopScene(canvas) {
     { id: 'structures_room', minX: 7.0, maxX: 18.0, minZ: -16.0, maxZ: -3.2, focusOffset: [12.5, 0, -9.5] }
   ];
 
-  // 封鎖中的兩扇門錨點資訊（供 Coming Soon 偵測）
-  const lockedDoors = [
-    { id: 'test_bay', name: '測試廠房', pos: new THREE.Vector3(-18.0, 2.4, 2.0) },
-    { id: 'machine_shop', name: '加工車間', pos: new THREE.Vector3(18.0, 2.4, 2.0) }
+  const portalZones = [
+    { id: 'test_bay', name: '測試廠房', url: 'test_bay.html', minX: -19.5, maxX: -17.5, minZ: 0.5, maxZ: 3.5 },
+    { id: 'machine_shop', name: '加工車間', url: 'machine_shop.html', minX: 17.5, maxX: 19.5, minZ: 0.5, maxZ: 3.5 }
   ];
 
-  return { scene, camera, renderer, baseD, wallColliders, roomZones, lockedDoors };
+  return { scene, camera, renderer, baseD, wallColliders, roomZones, portalZones };
+}
+
+// 2. 測試廠房場景
+export function initTestBayScene(canvas) {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0f172a);
+
+  const aspect = window.innerWidth / window.innerHeight;
+  const d = 9.0;
+  const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
+  camera.position.set(16, 20, 16);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 0.85));
+  const sun = new THREE.DirectionalLight(0x38bdf8, 0.9);
+  sun.position.set(15, 25, 12);
+  sun.castShadow = true;
+  scene.add(sun);
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.4, 22), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 }));
+  floor.position.set(0, -0.2, 0);
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  const grid = new THREE.GridHelper(24, 12, 0x0284c7, 0x334155);
+  grid.position.y = 0.02;
+  scene.add(grid);
+
+  const stand = new THREE.Mesh(new THREE.BoxGeometry(6, 1.2, 4), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
+  stand.position.set(0, 0.6, -5);
+  stand.castShadow = true;
+  scene.add(stand);
+
+  const chamber = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 4.5, 16), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9 }));
+  chamber.rotation.z = Math.PI / 2;
+  chamber.position.set(0, 1.8, -5);
+  chamber.castShadow = true;
+  scene.add(chamber);
+
+  const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 3.2), new THREE.MeshStandardMaterial({ color: 0x38bdf8 }));
+  doorFrame.position.set(12.8, 2.0, 0);
+  scene.add(doorFrame);
+
+  const engineer = createVoxelCharacter(0x06b6d4);
+  engineer.position.set(0, 0, -2.5);
+  scene.add(engineer);
+
+  return { scene, camera, renderer, d, engineer };
+}
+
+// 3. 加工車間場景
+export function initMachineShopScene(canvas) {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xfef3c7);
+
+  const aspect = window.innerWidth / window.innerHeight;
+  const d = 9.0;
+  const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
+  camera.position.set(16, 20, 16);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd97706, 0.85));
+  const sun = new THREE.DirectionalLight(0xfffbeb, 0.9);
+  sun.position.set(18, 30, 15);
+  sun.castShadow = true;
+  scene.add(sun);
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.4, 22), new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.35 }));
+  floor.position.set(0, -0.2, 0);
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  const grid = new THREE.GridHelper(24, 12, 0xb45309, 0xe4e4e7);
+  grid.position.y = 0.02;
+  scene.add(grid);
+
+  const cnc = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.2, 3.8), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6 }));
+  cnc.position.set(0, 1.6, -5.5);
+  cnc.castShadow = true;
+  scene.add(cnc);
+
+  const cncWindow = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.6), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+  cncWindow.position.set(0, 2.0, -3.58);
+  scene.add(cncWindow);
+
+  const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 3.2), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+  doorFrame.position.set(-12.8, 2.0, 0);
+  scene.add(doorFrame);
+
+  const machinist = createVoxelCharacter(0xd97706);
+  machinist.position.set(0, 0, -2.6);
+  scene.add(machinist);
+
+  return { scene, camera, renderer, d, machinist };
 }

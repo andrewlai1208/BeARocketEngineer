@@ -55,6 +55,7 @@ const gameState = {
   solvedEvents: new Set(savedData.solvedEventsList || []),
   keys: { w: false, a: false, s: false, d: false },
   joystickVector: { x: 0, y: 0 },
+  isTeleporting: false,
   nearbyNPC: null,
   activeDialogue: null
 };
@@ -81,7 +82,7 @@ function saveGameState() {
 // 1. 初始化 3D 畫布與辦公室場景
 const canvas = document.getElementById('webgl-canvas');
 const badgeContainer = document.getElementById('badge-container');
-const { scene, camera, renderer, baseD, wallColliders, roomZones, lockedDoors } = initWorkshopScene(canvas);
+const { scene, camera, renderer, baseD, wallColliders, roomZones, portalZones } = initWorkshopScene(canvas);
 
 // 生成主角
 const player = createVoxelCharacter(0xf59e0b);
@@ -94,17 +95,6 @@ playerTag.className = 'hud-badge bg-amber-500 text-white';
 playerTag.innerText = `${gameState.playerName} | ${gameState.playerTitle}`;
 badgeContainer.appendChild(playerTag);
 player.userData.tagEl = playerTag;
-
-// 建立兩側大門的「Coming Soon」懸浮標籤
-if (lockedDoors) {
-  lockedDoors.forEach(door => {
-    const pill = document.createElement('div');
-    pill.className = 'hud-badge bg-slate-900/90 text-amber-400 border border-amber-500/60 font-black text-[11px] shadow-xl hidden px-3 py-1 flex items-center gap-1.5 backdrop-blur-md transition-all duration-200';
-    pill.innerHTML = `<span>🚧</span><span>${door.name} Coming Soon</span>`;
-    badgeContainer.appendChild(pill);
-    door.badgeEl = pill;
-  });
-}
 
 // 2. NPC 配置
 const NPC_CONFIGS = [
@@ -300,18 +290,6 @@ function updateHUD() {
     npc.hintEl.style.left = `${x}px`;
     npc.hintEl.style.top = `${y - 12}px`;
   });
-
-  // 更新封鎖門口的 Coming Soon 膠囊投影位置
-  if (lockedDoors) {
-    lockedDoors.forEach(door => {
-      if (door.badgeEl && !door.badgeEl.classList.contains('hidden')) {
-        vProj.copy(door.pos);
-        vProj.project(camera);
-        door.badgeEl.style.left = `${(vProj.x * 0.5 + 0.5) * window.innerWidth}px`;
-        door.badgeEl.style.top = `${(-vProj.y * 0.5 + 0.5) * window.innerHeight}px`;
-      }
-    });
-  }
 }
 
 // 鍵盤監聽
@@ -450,10 +428,10 @@ function animate() {
   const speed = 7.5 * delta;
 
   // 鍵盤移動向量（核心公式：Camera at +X, +Y, +Z）
-  if (gameState.keys.w) { mx -= speed * 0.7071; mz -= speed * 0.7071; }
-  if (gameState.keys.s) { mx += speed * 0.7071; mz += speed * 0.7071; }
-  if (gameState.keys.a) { mx -= speed * 0.7071; mz += speed * 0.7071; }
-  if (gameState.keys.d) { mx += speed * 0.7071; mz -= speed * 0.7071; }
+  if (gameState.keys.w) { mx -= speed * 0.7071; mz -= speed * 0.7071; } // 螢幕直上
+  if (gameState.keys.s) { mx += speed * 0.7071; mz += speed * 0.7071; } // 螢幕直下
+  if (gameState.keys.a) { mx -= speed * 0.7071; mz += speed * 0.7071; } // 螢幕直左
+  if (gameState.keys.d) { mx += speed * 0.7071; mz -= speed * 0.7071; } // 螢幕直右 (+X, -Z)
 
   // 手機虛擬搖桿
   const jx = gameState.joystickVector.x;
@@ -483,7 +461,6 @@ function animate() {
   // 人物雙腿擺動動畫
   updateCharacterWalk(player, isMoving, delta);
 
-  // NPC 接近判定
   let closeOne = null;
   activeNPCs.forEach(npc => {
     const dist = player.position.distanceTo(npc.mesh.position);
@@ -506,18 +483,23 @@ function animate() {
     }
   }
 
-  // ----------------------------------------------------
-  // 接近封鎖大門時浮現 Coming Soon 標籤
-  // ----------------------------------------------------
-  if (lockedDoors) {
-    lockedDoors.forEach(door => {
-      const dist = player.position.distanceTo(door.pos);
-      if (dist < 4.2) {
-        door.badgeEl.classList.remove('hidden');
-      } else {
-        door.badgeEl.classList.add('hidden');
+  // 門口傳送跳轉偵測（踏入左大門或右大門時平滑淡出跳轉）
+  for (const portal of (portalZones || [])) {
+    if (player.position.x >= portal.minX && player.position.x <= portal.maxX &&
+        player.position.z >= portal.minZ && player.position.z <= portal.maxZ) {
+      if (!gameState.isTeleporting) {
+        gameState.isTeleporting = true;
+        sfx.playSelect();
+        saveGameState();
+
+        document.body.style.transition = 'opacity 0.35s ease';
+        document.body.style.opacity = '0';
+        setTimeout(() => {
+          window.location.href = portal.url;
+        }, 350);
       }
-    });
+      break;
+    }
   }
 
   // 動態 Zoom-In / Out
