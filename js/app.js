@@ -3,7 +3,7 @@ import { LabAudio } from './audio.js';
 import { EventsEngine } from './eventsEngine.js';
 import { initWorkshopScene, createVoxelCharacter } from './scene.js';
 
-console.log('[Rocket24hr] 遊戲引擎啟動...');
+console.log('[Rocket24hr] 遊戲引擎啟動（Mobile Enabled）...');
 
 const sfx = new LabAudio();
 const engine = new EventsEngine();
@@ -17,6 +17,7 @@ const gameState = {
   playerTitle: '系統整合 Lead',
   solvedEvents: new Set(),
   keys: { w: false, a: false, s: false, d: false },
+  joystickVector: { x: 0, y: 0 }, // 手機搖桿輸入向量
   nearbyNPC: null,
   activeDialogue: null
 };
@@ -48,9 +49,9 @@ function bindCoverEvents() {
     btn.onclick = () => {
       sfx.playClick();
       roleButtons.forEach(b => {
-        b.className = 'role-btn py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-white border-slate-200 text-slate-600 hover:border-slate-300';
+        b.className = 'role-btn py-2 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-white border-slate-200 text-slate-600';
       });
-      btn.className = 'role-btn active py-2.5 px-3 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-1 bg-blue-50 border-blue-500 text-blue-900';
+      btn.className = 'role-btn active py-2 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-blue-50 border-blue-500 text-blue-900';
       gameState.playerRole = btn.dataset.role || 'SE';
       gameState.playerTitle = btn.dataset.title || '系統整合 Lead';
     };
@@ -116,7 +117,7 @@ function setupNPCs() {
 
     const hint = document.createElement('div');
     hint.className = 'interact-pill px-2 py-0.5 rounded-full bg-slate-900 text-white font-bold text-[10px] hidden shadow-md';
-    hint.innerText = '[E 互動]';
+    hint.innerText = '[互動]';
     badgeContainer.appendChild(hint);
 
     activeNPCs.push({ roomId: cfg.roomId, mesh, tagEl: tag, hintEl: hint });
@@ -127,7 +128,7 @@ function updateMetricsUI() {
   const b = document.getElementById('stat-budget');
   const m = document.getElementById('stat-morale');
   const r = document.getElementById('stat-readiness');
-  if (b) b.innerText = `$${gameState.budget.toLocaleString()} NTD`;
+  if (b) b.innerText = `$${gameState.budget.toLocaleString()}`;
   if (m) m.innerText = `${Math.max(0, gameState.morale)}%`;
   if (r) r.innerText = `${Math.min(100, gameState.readiness)}%`;
 }
@@ -138,6 +139,7 @@ const diagBadge = document.getElementById('diag-badge');
 const diagSpeaker = document.getElementById('diag-speaker');
 const diagText = document.getElementById('diag-text');
 const diagOptions = document.getElementById('diag-options');
+const btnMobileInteract = document.getElementById('btn-mobile-interact');
 
 function openRoomDialogue(npc) {
   const ev = engine.getEligibleEvent(npc.roomId, gameState);
@@ -147,7 +149,7 @@ function openRoomDialogue(npc) {
   sfx.playSelect();
 
   const rData = engine.getRoomConfig(npc.roomId) || { roleTitle: '工程人員', badgeColor: 'bg-slate-700 text-white' };
-  diagBadge.className = `px-2.5 py-0.5 rounded-full text-xs font-black ${rData.badgeColor}`;
+  diagBadge.className = `px-2 py-0.5 rounded-full text-[11px] md:text-xs font-black ${rData.badgeColor}`;
   diagBadge.innerText = rData.roleTitle;
   diagSpeaker.innerText = ev.speaker;
   diagText.innerText = ev.text;
@@ -155,7 +157,7 @@ function openRoomDialogue(npc) {
 
   ev.options.forEach(opt => {
     const btn = document.createElement('button');
-    btn.className = 'p-3 rounded-2xl border text-xs font-bold text-left transition flex flex-col justify-center bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-400 text-slate-800 shadow-sm';
+    btn.className = 'p-3 rounded-2xl border text-xs font-bold text-left transition flex flex-col justify-center bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-400 text-slate-800 shadow-sm active:scale-95';
     btn.innerText = opt.label;
     btn.onclick = () => {
       sfx.playTone(740, 'sine', 0.1);
@@ -192,13 +194,24 @@ function closeDialogue() {
 const btnClose = document.getElementById('diag-btn-close');
 if (btnClose) btnClose.onclick = closeDialogue;
 
+// 手機專用互動按鈕監聽
+if (btnMobileInteract) {
+  btnMobileInteract.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (gameState.activeDialogue) {
+      closeDialogue();
+    } else if (gameState.nearbyNPC) {
+      openRoomDialogue(gameState.nearbyNPC);
+    }
+  });
+}
+
 // 音效與發射結算
 const btnSound = document.getElementById('btn-sound-toggle');
 if (btnSound) {
   btnSound.onclick = () => {
     const on = sfx.toggle();
     document.getElementById('sound-icon').innerText = on ? '🔊' : '🔇';
-    document.getElementById('sound-text').innerText = on ? '音效' : '靜音';
   };
 }
 
@@ -216,14 +229,14 @@ if (btnLaunch) {
       sfx.playSuccess();
       rIcon.innerText = '🚀';
       rTitle.innerText = '試車發射大成功！探空二號順利入軌！';
-      rBadge.className = 'inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-3 bg-emerald-100 text-emerald-800 border border-emerald-300';
+      rBadge.className = 'inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-2.5 bg-emerald-100 text-emerald-800 border border-emerald-300';
       rBadge.innerText = 'MISSION APOGEE: 1,650 METERS';
       rDesc.innerText = `整備度達到 ${gameState.readiness}%！各小間排查順利，主傘頂空精準彈出，全體隊員在沙灘順利尋回整箭！`;
     } else {
       sfx.playAlarm();
       rIcon.innerText = '💥';
       rTitle.innerText = '半空中斷！發射中止與殘骸尋回';
-      rBadge.className = 'inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-3 bg-red-100 text-red-800 border border-red-300';
+      rBadge.className = 'inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-2.5 bg-red-100 text-red-800 border border-red-300';
       rBadge.innerText = 'MISSION ABORTED';
       rDesc.innerText = `當前整備度僅 ${gameState.readiness}%。由於有獨立小間未完成巡檢排除隱患，火箭升空後姿態解體。收拾殘骸回工坊準備檢討報告！`;
     }
@@ -256,7 +269,7 @@ function updateHUD() {
   });
 }
 
-// 6. 鍵盤事件監聽
+// 6. 電腦端鍵盤監聽
 window.addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT') return;
   const code = e.code;
@@ -280,6 +293,76 @@ window.addEventListener('keyup', e => {
   if (code === 'KeyA' || code === 'ArrowLeft') gameState.keys.a = false;
   if (code === 'KeyD' || code === 'ArrowRight') gameState.keys.d = false;
 });
+
+// ----------------------------------------------------
+// 7. 手機虛擬搖桿觸控系統
+// ----------------------------------------------------
+function setupMobileJoystick() {
+  const zone = document.getElementById('joystick-zone');
+  const knob = document.getElementById('joystick-knob');
+  if (!zone || !knob) return;
+
+  let activeTouchId = null;
+  let originX = 0;
+  let originY = 0;
+  const maxRadius = 45; // 搖桿最大滑動半徑 (px)
+
+  zone.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (activeTouchId !== null) return;
+    const touch = e.changedTouches[0];
+    activeTouchId = touch.identifier;
+
+    const rect = zone.getBoundingClientRect();
+    originX = rect.left + rect.width / 2;
+    originY = rect.top + rect.height / 2;
+    updateKnob(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  window.addEventListener('touchmove', (e) => {
+    if (activeTouchId === null) return;
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      if (touch.identifier === activeTouchId) {
+        updateKnob(touch.clientX, touch.clientY);
+        break;
+      }
+    }
+  }, { passive: false });
+
+  const endTouch = (e) => {
+    if (activeTouchId === null) return;
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === activeTouchId) {
+        activeTouchId = null;
+        gameState.joystickVector.x = 0;
+        gameState.joystickVector.y = 0;
+        knob.style.transform = `translate(0px, 0px)`;
+        break;
+      }
+    }
+  };
+
+  window.addEventListener('touchend', endTouch);
+  window.addEventListener('touchcancel', endTouch);
+
+  function updateKnob(clientX, clientY) {
+    const dx = clientX - originX;
+    const dy = clientY - originY;
+    const dist = Math.hypot(dx, dy);
+    const clampedDist = Math.min(dist, maxRadius);
+    const angle = Math.atan2(dy, dx);
+
+    const knobX = Math.cos(angle) * clampedDist;
+    const knobY = Math.sin(angle) * clampedDist;
+    knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+
+    // 標準化 -1 ~ 1 向量 (注意螢幕座標 Y 朝下)
+    gameState.joystickVector.x = knobX / maxRadius;
+    gameState.joystickVector.y = knobY / maxRadius;
+  }
+}
+setupMobileJoystick();
 
 function checkCollision(nx, nz) {
   const r = 0.35;
@@ -311,7 +394,7 @@ setInterval(() => {
   }
 }, 1000);
 
-// 7. 動畫主循環（強化防護與相機數值安全檢查）
+// 8. 動畫主循環（支援手機搖桿 + 鍵盤雙向控制）
 let currentD = baseD || 9.5;
 const targetLookAt = new THREE.Vector3(0, 0, 0);
 const currentLookAt = new THREE.Vector3(0, 0, 0);
@@ -320,7 +403,6 @@ const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   
-  // 防護：限制 delta 最大值，避免分頁切換時產生過大的插值突波
   const rawDelta = clock.getDelta();
   const delta = Math.min(rawDelta, 0.05);
 
@@ -328,29 +410,22 @@ function animate() {
   let mz = 0;
   const speed = 7.5 * delta;
 
-  // 正交相機等角走位向量
-// ----------------------------------------------------
-  // 正交相機等角視角（Iso view）方向向量校正：
-  // ----------------------------------------------------
-  if (gameState.keys.w) {
-    // 螢幕往上（朝工坊後方前進）
-    mx -= speed * 0.7071;
-    mz -= speed * 0.7071;
-  }
-  if (gameState.keys.s) {
-    // 螢幕往下（朝工坊前方前進）
-    mx += speed * 0.7071;
-    mz += speed * 0.7071;
-  }
-  if (gameState.keys.a) {
-    // 螢幕往左（朝航電組走）
-    mx -= speed * 0.7071;
-    mz += speed * 0.7071;
-  }
-  if (gameState.keys.d) {
-    // 螢幕往右（朝結構組走）
-    mx += speed * 0.7071;
-    mz -= speed * 0.7071;
+  // 1. 電腦鍵盤輸入向量
+  if (gameState.keys.w) { mx -= speed * 0.7071; mz -= speed * 0.7071; }
+  if (gameState.keys.s) { mx += speed * 0.7071; mz += speed * 0.7071; }
+  if (gameState.keys.a) { mx -= speed * 0.7071; mz += speed * 0.7071; }
+  if (gameState.keys.d) { mx += speed * 0.7071; mz -= speed * 0.7071; }
+
+  // 2. 手機虛擬搖桿輸入（將螢幕 2D 搖桿映射至等角 3D 世界）
+  const jx = gameState.joystickVector.x;
+  const jy = gameState.joystickVector.y;
+  if (Math.abs(jx) > 0.05 || Math.abs(jy) > 0.05) {
+    // 搖桿上 (-Y) -> 往上 (-X, -Z)
+    // 搖桿右 (+X) -> 往右 (+X, -Z)
+    const joySpeed = speed * Math.hypot(jx, jy);
+    const rad = Math.atan2(jy, jx) - Math.PI / 4; // 依相機角度旋轉 45 度
+    mx += Math.cos(rad) * joySpeed;
+    mz += Math.sin(rad) * joySpeed;
   }
 
   if (Math.abs(mx) > 0.0001 || Math.abs(mz) > 0.0001) {
@@ -374,11 +449,11 @@ function animate() {
     player.userData.rightLeg.rotation.x = 0;
   }
 
-  // 接近 NPC 判定
+  // 接近 NPC 判定與手機按鈕狀態切換
   let closeOne = null;
   activeNPCs.forEach(npc => {
     const dist = player.position.distanceTo(npc.mesh.position);
-    if (dist < 3.0) {
+    if (dist < 3.2) {
       closeOne = npc;
       npc.hintEl.classList.remove('hidden');
     } else {
@@ -387,7 +462,17 @@ function animate() {
   });
   gameState.nearbyNPC = closeOne;
 
-  // 鏡頭動態縮放與平滑跟隨
+  if (btnMobileInteract) {
+    if (closeOne) {
+      btnMobileInteract.classList.remove('opacity-40');
+      btnMobileInteract.classList.add('opacity-100', 'ring-4', 'ring-blue-300', 'animate-pulse');
+    } else {
+      btnMobileInteract.classList.remove('opacity-100', 'ring-4', 'ring-blue-300', 'animate-pulse');
+      btnMobileInteract.classList.add('opacity-40');
+    }
+  }
+
+  // 鏡頭動態縮放
   const currentRoom = getCurrentRoom(player.position.x, player.position.z);
   let targetD = baseD || 9.5;
   if (currentRoom) {
@@ -401,7 +486,6 @@ function animate() {
     targetLookAt.set(player.position.x * 0.8, 0, player.position.z * 0.8);
   }
 
-  // 插值計算並保證數字有效性
   currentD += (targetD - currentD) * Math.min(1.0, delta * 3.5);
   if (isNaN(currentD) || currentD < 1.0) currentD = baseD || 9.5;
 
@@ -424,7 +508,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// 8. 載入資料庫
+// 9. 載入資料庫
 async function loadEventsData() {
   try {
     await engine.load('./data/events.json');
