@@ -10,6 +10,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/style.css">
+  <!-- PWA Web App Manifest (Android Chrome) -->
+  <link rel="manifest" href="./manifest.json">
+
+<!-- iOS Safari 全螢幕與狀態列設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BeARocketEngineer">
+
+<!-- 行動端 Viewport 防縮放與安全區域填滿 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 </head>
 <body class="relative w-screen h-screen overflow-hidden bg-slate-100">
 
@@ -90,6 +100,9 @@
 
   <!-- HUD 狀態欄 -->
   <header class="absolute top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 z-30 flex items-center justify-between gap-2 pointer-events-none">
+    <button id="btn-fullscreen" class="px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition flex items-center gap-1 text-[11px] md:text-xs">
+            ⛶
+    </button>
     <div class="glass-panel rounded-2xl px-3 py-2 md:px-5 md:py-3 flex items-center gap-3 md:gap-5 pointer-events-auto border-l-4 border-l-blue-600 shadow-lg">
       <div>
         <div class="flex items-center gap-1">

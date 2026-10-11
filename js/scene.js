@@ -137,24 +137,9 @@ export function initWorkshopScene(canvas) {
 
   workbench(-16.8, -9.5, Math.PI / 2, 5.0, 2.0); // 航電組主桌
   workbench(0, -14.8, 0, 5.5, 2.2);              // 推進組試驗桌
-  workbench(16.8, -9.5, -Math.PI / 2, 5.0, 2.0); // 結構組長桌
+  workbench(12.5, -14.8, 0, 5.0, 2.0); // 結構組長桌
   workbench(0, 6.0, 0, 4.0, 2.0);                // 隊長指揮桌
   workbench(-9.0, 5.0, 0, 3.8, 2.0);             // 降落傘桌
-
-  // 中央火箭總裝架
-  const rGroup = new THREE.Group();
-  const rBody = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 6.2, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }));
-  rBody.position.y = 3.3;
-  rBody.castShadow = true;
-  rGroup.add(rBody);
-
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.52, 1.4, 16), new THREE.MeshStandardMaterial({ color: 0x2563eb }));
-  nose.position.y = 7.1;
-  rGroup.add(nose);
-  rGroup.position.set(9.0, 0, 5.0);
-  labGroup.add(rGroup);
-
-  wallColliders.push({ minX: 8.0, maxX: 10.0, minZ: 4.0, maxZ: 6.0 });
 
   scene.add(labGroup);
 

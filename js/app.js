@@ -90,7 +90,7 @@ bindCoverEvents();
 const NPC_CONFIGS = [
   { roomId: 'avionics_room', shirtColor: 0x2563eb, pos: [-14.2, 0, -9.5], rot: Math.PI / 2 },
   { roomId: 'propulsion_room', shirtColor: 0xdc2626, pos: [0, 0, -12.2], rot: 0 },
-  { roomId: 'structures_room', shirtColor: 0x059669, pos: [14.2, 0, -9.5], rot: -Math.PI / 2 },
+  { roomId: 'structures_room', shirtColor: 0x059669, pos: [12.5, 0, -12.2], rot: 0 },
   { roomId: 'central_courtyard', shirtColor: 0x9333ea, pos: [0, 0, 4.2], rot: Math.PI }
 ];
 
@@ -564,5 +564,25 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+
+const btnFullscreen = document.getElementById('btn-fullscreen');
+if (btnFullscreen) {
+  btnFullscreen.onclick = () => {
+    if (!document.fullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        document.documentElement.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+  };
+}
 
 loadEventsData();
