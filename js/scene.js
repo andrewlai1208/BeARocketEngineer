@@ -1,6 +1,6 @@
 // js/scene.js
 
-// 門牌文字貼圖生成器
+// 門牌文字貼圖生成器（3D 門楣招牌）
 function createSignTexture(text, bgColor = '#2563eb') {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
@@ -16,6 +16,7 @@ function createSignTexture(text, bgColor = '#2563eb') {
   return new THREE.CanvasTexture(canvas);
 }
 
+// 角色生成（包含腿部骨架）
 export function createVoxelCharacter(shirtColorHex) {
   const char = new THREE.Group();
   const matSkin = new THREE.MeshLambertMaterial({ color: 0xfcd34d });
@@ -51,7 +52,7 @@ export function createVoxelCharacter(shirtColorHex) {
   return char;
 }
 
-// 通用走路雙腿擺動更新
+// 雙腿擺動行走動畫運算
 export function updateCharacterWalk(char, isMoving, delta) {
   if (!char || !char.userData || !char.userData.leftLeg) return;
   if (isMoving) {
@@ -65,7 +66,7 @@ export function updateCharacterWalk(char, isMoving, delta) {
   }
 }
 
-// 1. 辦公室主場景 (Office)
+// 1. 辦公室主場景 (Office - 暢通解封版)
 export function initWorkshopScene(canvas) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xfafafa);
@@ -82,6 +83,7 @@ export function initWorkshopScene(canvas) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+  // 採光系統
   const hemiLight = new THREE.HemisphereLight(0xffffcc, 0xFFF3BF, 0.8);
   scene.add(hemiLight);
 
@@ -99,6 +101,7 @@ export function initWorkshopScene(canvas) {
 
   const labGroup = new THREE.Group();
 
+  // 地面 (38 x 32 米)
   const floorGeo = new THREE.BoxGeometry(38, 0.4, 32);
   const floorMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.5, metalness: 0.05 });
   const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -110,6 +113,7 @@ export function initWorkshopScene(canvas) {
   grid.position.set(0, 0.02, -1.0);
   labGroup.add(grid);
 
+  // 材質
   const wallMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
   const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6 });
   const matWood = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.35, metalness: 0.05 });
@@ -150,37 +154,41 @@ export function initWorkshopScene(canvas) {
     labGroup.add(f);
   }
 
-  // 四周外牆
-  addSolidWall(37.5, 4.2, 0.4, 0, 2.1, -16.5);
-  addSolidWall(37.5, 1.2, 0.4, 0, 0.6, 14.5);
+  // --- 四周外牆（已嚴密接合門框，無漏風缺口）---
+  addSolidWall(37.5, 4.2, 0.4, 0, 2.1, -16.5);   // 後總外牆
+  addSolidWall(37.5, 1.2, 0.4, 0, 0.6, 14.5);    // 前護欄
 
-  // 左外牆：通往「測試廠房」
+  // 左外牆：通往「測試廠房」（解封無阻擋）
   addSolidWall(0.4, 4.2, 16.9, -18.5, 2.1, -8.05);
   addSolidWall(0.4, 4.2, 10.9, -18.5, 2.1, 9.05);
   addDoorLintel(-18.5, 2.0, Math.PI / 2, 3.2, '測試廠房', '#0284c7');
-  addSolidWall(0.4, 0.2, 3.2, -18.5, 4.1, 2.0);
+  addSolidWall(0.4, 0.2, 3.2, -18.5, 4.1, 2.0); // 門楣上方填補牆
 
-  // 右外牆：通往「加工車間」
+  // 右外牆：通往「加工車間」（解封無阻擋）
   addSolidWall(0.4, 4.2, 16.9, 18.5, 2.1, -8.05);
   addSolidWall(0.4, 4.2, 10.9, 18.5, 2.1, 9.05);
   addDoorLintel(18.5, 2.0, -Math.PI / 2, 3.2, '加工車間', '#d97706');
-  addSolidWall(0.4, 0.2, 3.2, 18.5, 4.1, 2.0);
+  addSolidWall(0.4, 0.2, 3.2, 18.5, 4.1, 2.0); // 門楣上方填補牆
 
-  // 內部各小組隔間
+  // --- 內部小組隔牆 ---
+  // 1. 推進室隔牆
   addSolidWall(0.3, 4.2, 11.0, -6.5, 2.1, -11.0);
   addSolidWall(0.3, 4.2, 11.0, 6.5, 2.1, -11.0);
   addSolidWall(4.8, 4.2, 0.3, -4.1, 2.1, -5.5);
   addSolidWall(4.8, 4.2, 0.3, 4.1, 2.1, -5.5);
   addDoorLintel(0, -5.5, 0, 3.2);
 
+  // 2. 航電室隔牆
   addSolidWall(0.3, 4.2, 13.5, -6.8, 2.1, -9.75);
   addSolidWall(8.8, 4.2, 0.3, -14.1, 2.1, -3.0);
   addDoorLintel(-8.2, -3.0, 0, 2.8);
 
+  // 3. 結構室隔牆
   addSolidWall(0.3, 4.2, 13.5, 6.8, 2.1, -9.75);
   addSolidWall(8.8, 4.2, 0.3, 14.1, 2.1, -3.0);
   addDoorLintel(8.2, -3.0, 0, 2.8);
 
+  // 工作桌
   function workbench(x, z, rotY, w = 4.2, depth = 2.0) {
     const g = new THREE.Group();
     const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.22, depth), matWood);
@@ -206,11 +214,11 @@ export function initWorkshopScene(canvas) {
     wallColliders.push({ minX: x - halfW, maxX: x + halfW, minZ: z - halfD, maxZ: z + halfD });
   }
 
-  workbench(-16.8, -9.5, Math.PI / 2, 5.0, 2.0);
-  workbench(0, -14.8, 0, 5.5, 2.2);
-  workbench(12.5, -14.8, 0, 5.0, 2.0);
-  workbench(0, 6.0, 0, 4.0, 2.0);
-  workbench(-9.0, 5.0, 0, 3.8, 2.0);
+  workbench(-16.8, -9.5, Math.PI / 2, 5.0, 2.0); // 航電組主桌
+  workbench(0, -14.8, 0, 5.5, 2.2);              // 推進組試驗桌
+  workbench(12.5, -14.8, 0, 5.0, 2.0);            // 結構組長桌
+  workbench(0, 6.0, 0, 4.0, 2.0);                // 隊長指揮桌
+  workbench(-9.0, 5.0, 0, 3.8, 2.0);             // 降落傘桌
 
   scene.add(labGroup);
 
@@ -220,6 +228,7 @@ export function initWorkshopScene(canvas) {
     { id: 'structures_room', minX: 7.0, maxX: 18.0, minZ: -16.0, maxZ: -3.2, focusOffset: [12.5, 0, -9.5] }
   ];
 
+  // 傳送跳轉區域（左右兩扇門）
   const portalZones = [
     { id: 'test_bay', name: '測試廠房', url: 'test_bay.html', minX: -19.5, maxX: -17.5, minZ: 0.5, maxZ: 3.5 },
     { id: 'machine_shop', name: '加工車間', url: 'machine_shop.html', minX: 17.5, maxX: 19.5, minZ: 0.5, maxZ: 3.5 }
@@ -228,7 +237,7 @@ export function initWorkshopScene(canvas) {
   return { scene, camera, renderer, baseD, wallColliders, roomZones, portalZones };
 }
 
-// 2. 測試廠房場景
+// 2. 測試廠房場景 (Test Bay)
 export function initTestBayScene(canvas) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0f172a);
@@ -281,7 +290,7 @@ export function initTestBayScene(canvas) {
   return { scene, camera, renderer, d, engineer };
 }
 
-// 3. 加工車間場景
+// 3. 加工車間場景 (Machine Shop)
 export function initMachineShopScene(canvas) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xfef3c7);
