@@ -142,7 +142,7 @@
       if (keys.w) { mx -= speed * 0.7071; mz -= speed * 0.7071; }
       if (keys.s) { mx += speed * 0.7071; mz += speed * 0.7071; }
       if (keys.a) { mx -= speed * 0.7071; mz += speed * 0.7071; }
-      if (keys.d) { mx += speed * 0.7071; mz += speed * 0.7071; }
+      if (keys.d) { mx += speed * 0.7071; mz -= speed * 0.7071; }
 
       const jx = joystickVector.x, jy = joystickVector.y;
       if (Math.abs(jx) > 0.05 || Math.abs(jy) > 0.05) {

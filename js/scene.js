@@ -103,15 +103,11 @@ export function initWorkshopScene(canvas) {
 
   // 地面 (38 x 32 米)
   const floorGeo = new THREE.BoxGeometry(38, 0.4, 32);
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.5, metalness: 0.05 });
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0xB0ACAB, roughness: 0.5, metalness: 0.05 });
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.position.set(0, -0.2, -1.0);
   floor.receiveShadow = true;
   labGroup.add(floor);
-
-  const grid = new THREE.GridHelper(36, 18, 0x94a3b8, 0xe2e8f0);
-  grid.position.set(0, 0.02, -1.0);
-  labGroup.add(grid);
 
   // 材質
   const wallMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
@@ -253,41 +249,22 @@ export function initTestBayScene(canvas) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 0.85));
-  const sun = new THREE.DirectionalLight(0x38bdf8, 0.9);
+  scene.add(new THREE.HemisphereLight(0xffffcc, 0xFFF3BF, 0.8));
+  const sun = new THREE.DirectionalLight(0xBDBDBD, 0.9);
   sun.position.set(15, 25, 12);
   sun.castShadow = true;
   scene.add(sun);
 
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.4, 22), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 }));
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.4, 22), new THREE.MeshStandardMaterial({ color: 0xB0ACAB, roughness: 0.4 }));
   floor.position.set(0, -0.2, 0);
   floor.receiveShadow = true;
   scene.add(floor);
-
-  const grid = new THREE.GridHelper(24, 12, 0x0284c7, 0x334155);
-  grid.position.y = 0.02;
-  scene.add(grid);
-
-  const stand = new THREE.Mesh(new THREE.BoxGeometry(6, 1.2, 4), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 }));
-  stand.position.set(0, 0.6, -5);
-  stand.castShadow = true;
-  scene.add(stand);
-
-  const chamber = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 4.5, 16), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9 }));
-  chamber.rotation.z = Math.PI / 2;
-  chamber.position.set(0, 1.8, -5);
-  chamber.castShadow = true;
-  scene.add(chamber);
-
   const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 3.2), new THREE.MeshStandardMaterial({ color: 0x38bdf8 }));
   doorFrame.position.set(12.8, 2.0, 0);
   scene.add(doorFrame);
 
-  const engineer = createVoxelCharacter(0x06b6d4);
-  engineer.position.set(0, 0, -2.5);
-  scene.add(engineer);
 
-  return { scene, camera, renderer, d, engineer };
+  return { scene, camera, renderer, d};
 }
 
 // 3. 加工車間場景 (Machine Shop)
@@ -306,37 +283,20 @@ export function initMachineShopScene(canvas) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xd97706, 0.85));
+  scene.add(new THREE.HemisphereLight(0xffffcc, 0xFFF3BF, 0.8));
   const sun = new THREE.DirectionalLight(0xfffbeb, 0.9);
   sun.position.set(18, 30, 15);
   sun.castShadow = true;
   scene.add(sun);
 
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.4, 22), new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.35 }));
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.4, 22), new THREE.MeshStandardMaterial({ color: 0x858585, roughness: 0.35 }));
   floor.position.set(0, -0.2, 0);
   floor.receiveShadow = true;
   scene.add(floor);
-
-  const grid = new THREE.GridHelper(24, 12, 0xb45309, 0xe4e4e7);
-  grid.position.y = 0.02;
-  scene.add(grid);
-
-  const cnc = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.2, 3.8), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6 }));
-  cnc.position.set(0, 1.6, -5.5);
-  cnc.castShadow = true;
-  scene.add(cnc);
-
-  const cncWindow = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.6), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
-  cncWindow.position.set(0, 2.0, -3.58);
-  scene.add(cncWindow);
 
   const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 3.2), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
   doorFrame.position.set(-12.8, 2.0, 0);
   scene.add(doorFrame);
 
-  const machinist = createVoxelCharacter(0xd97706);
-  machinist.position.set(0, 0, -2.6);
-  scene.add(machinist);
-
-  return { scene, camera, renderer, d, machinist };
+  return { scene, camera, renderer, d};
 }
