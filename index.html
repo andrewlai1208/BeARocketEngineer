@@ -27,17 +27,17 @@
   <div id="badge-container" class="absolute inset-0 pointer-events-none z-20"></div>
 
   <!-- 手機專用虛擬控制器圖層 -->
-  <div id="mobile-controls" class="absolute inset-0 pointer-events-none z-30 flex justify-between items-end p-4 md:hidden">
-    <!-- 虛擬搖桿基座 -->
-    <div id="joystick-zone" class="w-32 h-32 relative pointer-events-auto rounded-full bg-slate-800/20 backdrop-blur-sm border border-white/20 touch-none flex items-center justify-center">
-      <div id="joystick-knob" class="w-14 h-14 rounded-full bg-white/90 shadow-lg border border-slate-200 transition-transform duration-75"></div>
-    </div>
+  <div id="mobile-controls" class="safe-bottom-controls absolute left-4 right-4 pointer-events-none z-30 flex justify-between items-end md:hidden">
+      <!-- 虛擬搖桿基座 -->
+      <div id="joystick-zone" class="w-32 h-32 relative pointer-events-auto rounded-full bg-slate-800/20 backdrop-blur-sm border border-white/20 touch-none flex items-center justify-center">
+        <div id="joystick-knob" class="w-14 h-14 rounded-full bg-white/90 shadow-lg border border-slate-200 transition-transform duration-75"></div>
+      </div>
 
-    <!-- 手機互動按鈕 (靠近NPC時亮起) -->
-    <button id="btn-mobile-interact" class="w-16 h-16 rounded-full bg-blue-600 text-white font-black text-sm shadow-xl active:scale-90 transition pointer-events-auto flex items-center justify-center border-2 border-white/50 opacity-40">
-      互動
-    </button>
-  </div>
+      <!-- 手機互動按鈕 (靠近 NPC 時亮起) -->
+      <button id="btn-mobile-interact" class="w-16 h-16 rounded-full bg-blue-600 text-white font-black text-sm shadow-xl active:scale-90 transition pointer-events-auto flex items-center justify-center border-2 border-white/50 opacity-40">
+        互動
+      </button>
+    </div>
 
   <!-- 封面選角卡片 -->
   <div id="cover-screen" class="absolute inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/80 backdrop-blur-md transition-opacity duration-300">
@@ -98,11 +98,8 @@
     </div>
   </div>
 
-  <!-- HUD 狀態欄 -->
-  <header class="absolute top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 z-30 flex items-center justify-between gap-2 pointer-events-none">
-    <button id="btn-fullscreen" class="px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition flex items-center gap-1 text-[11px] md:text-xs">
-            ⛶
-    </button>
+  <!-- HUD 狀態欄（往下移動，徹底避開時間、相機孔與瀏海） -->
+  <header class="safe-top-bar absolute left-3 right-3 md:left-5 md:right-5 z-30 flex items-center justify-between gap-2 pointer-events-none">
     <div class="glass-panel rounded-2xl px-3 py-2 md:px-5 md:py-3 flex items-center gap-3 md:gap-5 pointer-events-auto border-l-4 border-l-blue-600 shadow-lg">
       <div>
         <div class="flex items-center gap-1">

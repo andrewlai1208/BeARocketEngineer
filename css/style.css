@@ -4,22 +4,27 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+
 html, body {
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100dvh; /* 動態填滿視窗，避免 100vh 在行動端產生白邊 */
+  min-height: -webkit-fill-available;
   overflow: hidden;
   position: fixed;
+  inset: 0;
   font-family: 'Noto Sans TC', 'Plus Jakarta Sans', sans-serif;
-  background-color: #f1f5f9;
+  background-color: #cbd5e1; /* 背景色與工坊地板同色，即使拉動也絕無白邊 */
   color: #1e293b;
   overscroll-behavior: none;
   touch-action: none;
 }
+
 .font-mono-num {
   font-family: 'JetBrains Mono', monospace;
 }
+
 #webgl-canvas {
   position: absolute;
   top: 0;
@@ -29,6 +34,18 @@ html, body {
   display: block;
   z-index: 1;
 }
+
+/* 頂部避開手機瀏海與動態島 */
+.safe-top-bar {
+  top: max(env(safe-area-inset-top, 0px), 16px);
+  padding-top: 2px;
+}
+
+/* 底部控制器避開 Home 橫條與底邊 */
+.safe-bottom-controls {
+  bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+}
+
 .hud-badge {
   position: absolute;
   pointer-events: none;
@@ -43,6 +60,7 @@ html, body {
   transition: opacity 0.15s ease, transform 0.1s ease;
   backdrop-filter: blur(8px);
 }
+
 .interact-pill {
   position: absolute;
   pointer-events: none;
@@ -50,10 +68,12 @@ html, body {
   z-index: 22;
   animation: bounceSoft 1.2s infinite ease-in-out;
 }
+
 @keyframes bounceSoft {
   0%, 100% { transform: translate(-50%, -150%); }
   50% { transform: translate(-50%, -168%); }
 }
+
 .glass-panel {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
