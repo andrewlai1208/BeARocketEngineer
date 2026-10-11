@@ -16,6 +16,36 @@ function createSignTexture(text, bgColor = '#2563eb') {
   return new THREE.CanvasTexture(canvas);
 }
 
+// 建立可操作的 3D 筆記型電腦模型
+function createLaptopModel(screenColorHex = 0x38bdf8) {
+  const laptop = new THREE.Group();
+  const matBody = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+  const matScreen = new THREE.MeshBasicMaterial({ color: screenColorHex });
+
+  // 底座與鍵盤
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.03, 0.4), matBody);
+  base.position.y = 0.015;
+  base.castShadow = true;
+  laptop.add(base);
+
+  // 翻開的螢幕
+  const lid = new THREE.Group();
+  lid.position.set(0, 0.03, -0.2);
+  const lidBack = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.38, 0.03), matBody);
+  lidBack.position.set(0, 0.19, 0);
+  lid.add(lidBack);
+
+  // 發光螢幕面板
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32), matScreen);
+  screen.position.set(0, 0.19, 0.016);
+  lid.add(screen);
+
+  lid.rotation.x = -0.3; // 向後仰約 17 度
+  laptop.add(lid);
+
+  return laptop;
+}
+
 // 角色生成（包含腿部骨架）
 export function createVoxelCharacter(shirtColorHex) {
   const char = new THREE.Group();
@@ -66,7 +96,7 @@ export function updateCharacterWalk(char, isMoving, delta) {
   }
 }
 
-// 1. 辦公室主場景 (Office - 暢通解封版)
+// 1. 辦公室主場景 (Office - 暢通解封版 + 工作桌配置筆電)
 export function initWorkshopScene(canvas) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xfafafa);
@@ -101,7 +131,7 @@ export function initWorkshopScene(canvas) {
 
   const labGroup = new THREE.Group();
 
-  // 地面 (38 x 32 米)
+  // 地面 (水泥灰，無格線)
   const floorGeo = new THREE.BoxGeometry(38, 0.4, 32);
   const floorMat = new THREE.MeshStandardMaterial({ color: 0xB0ACAB, roughness: 0.5, metalness: 0.05 });
   const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -150,21 +180,21 @@ export function initWorkshopScene(canvas) {
     labGroup.add(f);
   }
 
-  // --- 四周外牆（已嚴密接合門框，無漏風缺口）---
+  // --- 四周外牆（密合無縫）---
   addSolidWall(37.5, 4.2, 0.4, 0, 2.1, -16.5);   // 後總外牆
   addSolidWall(37.5, 1.2, 0.4, 0, 0.6, 14.5);    // 前護欄
 
-  // 左外牆：通往「測試廠房」（解封無阻擋）
+  // 左外牆：測試廠房
   addSolidWall(0.4, 4.2, 16.9, -18.5, 2.1, -8.05);
   addSolidWall(0.4, 4.2, 10.9, -18.5, 2.1, 9.05);
   addDoorLintel(-18.5, 2.0, Math.PI / 2, 3.2, '測試廠房', '#0284c7');
-  addSolidWall(0.4, 0.2, 3.2, -18.5, 4.1, 2.0); // 門楣上方填補牆
+  addSolidWall(0.4, 0.2, 3.2, -18.5, 4.1, 2.0);
 
-  // 右外牆：通往「加工車間」（解封無阻擋）
+  // 右外牆：加工車間
   addSolidWall(0.4, 4.2, 16.9, 18.5, 2.1, -8.05);
   addSolidWall(0.4, 4.2, 10.9, 18.5, 2.1, 9.05);
   addDoorLintel(18.5, 2.0, -Math.PI / 2, 3.2, '加工車間', '#d97706');
-  addSolidWall(0.4, 0.2, 3.2, 18.5, 4.1, 2.0); // 門楣上方填補牆
+  addSolidWall(0.4, 0.2, 3.2, 18.5, 4.1, 2.0);
 
   // --- 內部小組隔牆 ---
   // 1. 推進室隔牆
@@ -216,6 +246,48 @@ export function initWorkshopScene(canvas) {
   workbench(0, 6.0, 0, 4.0, 2.0);                // 隊長指揮桌
   workbench(-9.0, 5.0, 0, 3.8, 2.0);             // 降落傘桌
 
+  // ----------------------------------------------------
+  // 配置 4 組次系統研發筆電（放置在工作桌面上）
+  // ----------------------------------------------------
+  const laptops = [
+    {
+      id: 'propulsion',
+      name: '推進次系統筆電',
+      pos: new THREE.Vector3(0, 1.28, -14.2),
+      rotY: 0,
+      screenColor: 0xef4444
+    },
+    {
+      id: 'avionics',
+      name: '航電次系統筆電',
+      pos: new THREE.Vector3(-16.2, 1.28, -9.5),
+      rotY: Math.PI / 2,
+      screenColor: 0x3b82f6
+    },
+    {
+      id: 'structures',
+      name: '結構次系統筆電',
+      pos: new THREE.Vector3(12.5, 1.28, -14.2),
+      rotY: 0,
+      screenColor: 0x10b981
+    },
+    {
+      id: 'integration',
+      name: '系統整合總控筆電',
+      pos: new THREE.Vector3(0, 1.28, 5.5),
+      rotY: Math.PI,
+      screenColor: 0xa855f7
+    }
+  ];
+
+  laptops.forEach(item => {
+    const model = createLaptopModel(item.screenColor);
+    model.position.copy(item.pos);
+    model.rotation.y = item.rotY;
+    labGroup.add(model);
+    item.mesh = model;
+  });
+
   scene.add(labGroup);
 
   const roomZones = [
@@ -224,13 +296,12 @@ export function initWorkshopScene(canvas) {
     { id: 'structures_room', minX: 7.0, maxX: 18.0, minZ: -16.0, maxZ: -3.2, focusOffset: [12.5, 0, -9.5] }
   ];
 
-  // 傳送跳轉區域（左右兩扇門）
   const portalZones = [
     { id: 'test_bay', name: '測試廠房', url: 'test_bay.html', minX: -19.5, maxX: -17.5, minZ: 0.5, maxZ: 3.5 },
     { id: 'machine_shop', name: '加工車間', url: 'machine_shop.html', minX: 17.5, maxX: 19.5, minZ: 0.5, maxZ: 3.5 }
   ];
 
-  return { scene, camera, renderer, baseD, wallColliders, roomZones, portalZones };
+  return { scene, camera, renderer, baseD, wallColliders, roomZones, portalZones, laptops };
 }
 
 // 2. 測試廠房場景 (Test Bay)
@@ -259,12 +330,12 @@ export function initTestBayScene(canvas) {
   floor.position.set(0, -0.2, 0);
   floor.receiveShadow = true;
   scene.add(floor);
+
   const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 3.2), new THREE.MeshStandardMaterial({ color: 0x38bdf8 }));
   doorFrame.position.set(12.8, 2.0, 0);
   scene.add(doorFrame);
 
-
-  return { scene, camera, renderer, d};
+  return { scene, camera, renderer, d };
 }
 
 // 3. 加工車間場景 (Machine Shop)
@@ -298,5 +369,5 @@ export function initMachineShopScene(canvas) {
   doorFrame.position.set(-12.8, 2.0, 0);
   scene.add(doorFrame);
 
-  return { scene, camera, renderer, d};
+  return { scene, camera, renderer, d };
 }

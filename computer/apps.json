@@ -1,0 +1,79 @@
+[
+  {
+    "id": "openmotor",
+    "name": "OpenMotor 燃燒推力模擬器",
+    "icon": "🔥",
+    "category": "推進工程",
+    "size": "142 MB",
+    "price": 0,
+    "isPaid": false,
+    "desc": "國際開源火箭固態發動機內部幾何、燃燒壓力與噴喉侵蝕模擬器。",
+    "targetWorkstation": "propulsion"
+  },
+  {
+    "id": "chemkin",
+    "name": "CHEMKIN 推進燃燒化學求解器",
+    "icon": "💥",
+    "category": "推進工程",
+    "size": "420 MB",
+    "price": 4500,
+    "isPaid": true,
+    "desc": "高階熱化學反應動力學分析，精準預測富氧/富燃條件下特徵速度 C*。",
+    "targetWorkstation": "propulsion"
+  },
+  {
+    "id": "kicad",
+    "name": "KiCad EDA 飛控電路設計",
+    "icon": "⚡",
+    "category": "航電飛控",
+    "size": "260 MB",
+    "price": 0,
+    "isPaid": false,
+    "desc": "開源 PCB 佈線工具，檢視六軸 IMU 濾波電路與雙天線阻抗匹配。",
+    "targetWorkstation": "avionics"
+  },
+  {
+    "id": "matlab_simulink",
+    "name": "Simulink 六自由度姿態模擬",
+    "icon": "🧭",
+    "category": "航電飛控",
+    "size": "850 MB",
+    "price": 6800,
+    "isPaid": true,
+    "desc": "商業級 6-DOF 姿態動態學建模，驗證四元數 EKF 姿態估測與舵翼控制閉環。",
+    "targetWorkstation": "avionics"
+  },
+  {
+    "id": "openrocket",
+    "name": "OpenRocket 氣動壓心與彈道模擬",
+    "icon": "🛡️",
+    "category": "結構氣動",
+    "size": "180 MB",
+    "price": 0,
+    "isPaid": false,
+    "desc": "計算穿音速壓力中心 (CP) 位移與靜態穩定裕度，模擬傘降落點。",
+    "targetWorkstation": "structures"
+  },
+  {
+    "id": "ansys_fluent",
+    "name": "ANSYS Fluent 穿音速流場分析",
+    "icon": "🌪️",
+    "category": "結構氣動",
+    "size": "1.2 GB",
+    "price": 8200,
+    "isPaid": true,
+    "desc": "頂級 CFD 網格流體求解器，計算超音速激波阻力與整流罩表面氣動加熱。",
+    "targetWorkstation": "structures"
+  },
+  {
+    "id": "pytelemetry",
+    "name": "PyTelemetry 即時地面站儀表",
+    "icon": "📡",
+    "category": "全箭整合",
+    "size": "95 MB",
+    "price": 0,
+    "isPaid": false,
+    "desc": "透過 433MHz 串口即時解析整箭感測器封包，繪製高度、速度與電壓曲線。",
+    "targetWorkstation": "integration"
+  }
+]

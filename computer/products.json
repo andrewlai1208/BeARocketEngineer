@@ -1,0 +1,115 @@
+{
+  "categories": [
+    { "id": "all", "name": "全部原料" },
+    { "id": "metals", "name": "金屬材料" },
+    { "id": "composites", "name": "複合材料" },
+    { "id": "electronics", "name": "電子料件" },
+    { "id": "chemicals", "name": "化學品與推進劑" }
+  ],
+  "items": [
+    {
+      "id": "al_6061",
+      "category": "metals",
+      "name": "6061-T6 航太鋁合金圓棒 (Ø80mm)",
+      "price": 2800,
+      "unit": "支",
+      "desc": "抗拉強度高且易加工，用於車削推進燃燒室筒身與前艙蓋。"
+    },
+    {
+      "id": "steel_304",
+      "category": "metals",
+      "name": "304 不鏽鋼精密高壓法蘭塊",
+      "price": 1800,
+      "unit": "塊",
+      "desc": "耐高壓耐沖刷，用於製作試車台安全洩壓閥座與注入管線。"
+    },
+    {
+      "id": "graphite_rod",
+      "category": "metals",
+      "name": "高純度等靜壓石墨棒材 (Ø45mm)",
+      "price": 3200,
+      "unit": "根",
+      "desc": "耐受 2,500°C 燃燒室高溫，用於 CNC 精密車削超音速拉伐爾噴喉。"
+    },
+    {
+      "id": "carbon_t700",
+      "category": "composites",
+      "name": "T700 高模數單向碳纖維布 (300g/m²)",
+      "price": 4200,
+      "unit": "捲",
+      "desc": "縱向強度極高，用於真空袋輔助成型輕量化箭體筒身。"
+    },
+    {
+      "id": "epoxy_resin",
+      "category": "composites",
+      "name": "航太級耐溫環氧灌模樹脂組 2kg",
+      "price": 1600,
+      "unit": "組",
+      "desc": "低黏度好滲透，固化後玻璃化轉變溫度 Tg 達 135°C。"
+    },
+    {
+      "id": "glass_cloth",
+      "category": "composites",
+      "name": "E-Glass 電子級無鹼玻璃纖維布 5m",
+      "price": 950,
+      "unit": "捲",
+      "desc": "不阻隔無線電訊號，專門用於成型航電天線艙段外殼。"
+    },
+    {
+      "id": "imu_bmi088",
+      "category": "electronics",
+      "name": "Bosch BMI088 航太級低噪六軸 IMU",
+      "price": 1400,
+      "unit": "顆",
+      "desc": "抗高頻震動噪聲，提供 ±24G 加速度計與 ±2000°/s 陀螺儀姿態量測。"
+    },
+    {
+      "id": "lora_sx1262",
+      "category": "electronics",
+      "name": "Semtech SX1262 433MHz LoRa 射頻模組",
+      "price": 900,
+      "unit": "組",
+      "desc": "接收靈敏度達 -148 dBm，發射功率 22 dBm，提供 15km 視距遙測傳輸。"
+    },
+    {
+      "id": "baro_ms5611",
+      "category": "electronics",
+      "name": "MS5611 毫米級氣壓高度計傳感器",
+      "price": 750,
+      "unit": "顆",
+      "desc": "超高解析度高度感測，專供頂空 (Apogee) 開傘精準判斷。"
+    },
+    {
+      "id": "chem_kno3",
+      "category": "chemicals",
+      "name": "工業級硝酸鉀 KNO3 (99.4%) 5kg",
+      "price": 1200,
+      "unit": "包",
+      "desc": "固態推進劑主氧化劑，重結晶除雜後顆粒細緻均勻。"
+    },
+    {
+      "id": "chem_sorbitol",
+      "category": "chemicals",
+      "name": "食品級山梨醇 Sorbitol 3kg",
+      "price": 650,
+      "unit": "包",
+      "desc": "推進劑燃料，熔點約 95°C，熔融鑄造時流動性優異。"
+    },
+    {
+      "id": "chem_fe2o3",
+      "category": "chemicals",
+      "name": "奈米級三氧化二鐵催化劑 (Fe2O3) 500g",
+      "price": 800,
+      "unit": "罐",
+      "desc": "顯著提升推進劑燃速 15%~20%，改善低壓燃燒穩定度。"
+    },
+    {
+      "id": "oring_viton",
+      "category": "chemicals",
+      "name": "氟橡膠 (Viton) 耐高溫 O-Ring (10入)",
+      "price": 500,
+      "unit": "包",
+      "desc": "燃燒室端蓋高壓密封必備，耐溫 250°C，耐壓 > 4.0 MPa。"
+    }
+  ]
+}

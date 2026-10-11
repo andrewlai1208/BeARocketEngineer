@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>登入 - BeARocketEngineer</title>
+  <title>加入團隊 - BeARocketEngineer</title>
   
   <link rel="manifest" href="./manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -34,49 +34,36 @@
         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
         STUDENT ROCKET PROJECT
       </span>
-      <span class="text-[11px] font-mono-num text-slate-400 font-semibold">LOGIN</span>
+      <span class="text-[11px] font-mono-num text-slate-400 font-semibold">ONBOARDING</span>
     </div>
 
     <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
       BeA<span class="text-blue-600">RocketEngineer</span>
     </h1>
-    <p class="text-xs md:text-sm text-slate-600 mt-1.5 leading-relaxed">
-      距離試車發射倒數剩下 18 小時！在辦公室中穿梭協調各組、巡視測試廠房與加工車間，頂住壓力讓火箭順利離架！
+    <p class="text-xs md:text-sm text-slate-600 mt-2 leading-relaxed">
+      歡迎加入學生火箭研發團隊！作為新進成員，你將走訪辦公室、測試廠房與加工車間，協助推進、航電、結構各小組排除疑難雜症，一步步推進火箭研發進度！
     </p>
 
-    <div class="mt-4 space-y-3.5">
+    <div class="mt-5 space-y-4">
       <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">你的代號</label>
-        <input type="text" id="input-player-name" value="阿剛" maxlength="10"
-          class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
+        <label class="block text-xs font-bold text-slate-600 mb-1.5">隊員代號 / 姓名</label>
+        <input type="text" id="input-player-name" value="阿剛" maxlength="10" placeholder="請輸入你的代號"
+          class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
       </div>
 
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">擔當職位</label>
-        <div class="grid grid-cols-3 gap-2" id="role-selector">
-          <button type="button" data-role="SE" data-title="系統整合 Lead"
-            class="role-btn active py-2.5 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-blue-50 border-blue-500 text-blue-900">
-            <span>🧭 整合</span>
-            <span class="text-[9px] text-blue-700">協調救火</span>
-          </button>
-          <button type="button" data-role="PROP" data-title="推進工程 Propulsion"
-            class="role-btn py-2.5 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-white border-slate-200 text-slate-600 hover:border-slate-300">
-            <span>🔥 推進</span>
-            <span class="text-[9px] text-slate-400">燃燒室</span>
-          </button>
-          <button type="button" data-role="AV" data-title="航電飛控 Avionics"
-            class="role-btn py-2.5 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-white border-slate-200 text-slate-600 hover:border-slate-300">
-            <span>⚡ 航電</span>
-            <span class="text-[9px] text-slate-400">姿態飛控</span>
-          </button>
+      <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1.5">
+        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+          <span>📋</span> 新人研發任務須知
         </div>
+        <p>• 不分組別：推進、航電、結構與指揮組都有工作需要你協助。</p>
+        <p>• 專案啟動：研發時程自 <strong>2022 / 07 / 01</strong> 起算推進。</p>
       </div>
     </div>
 
     <div class="mt-6 pt-3 border-t border-slate-100 flex flex-col gap-2">
       <button id="btn-start-game"
         class="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-blue-500/25 transition">
-        進入辦公室 →
+        報到並進入辦公室 →
       </button>
       <div class="text-[10px] text-slate-400 text-center">
         電腦：WASD 移動・靠近按 [E] / 手機：左下搖桿移動・右下互動按鈕
@@ -89,39 +76,13 @@
     const sfx = new LabAudio();
     const STORAGE_KEY = 'BE_A_ROCKET_ENGINEER_SAVE_V1';
 
-    let selectedRole = 'SE';
-    let selectedTitle = '系統整合 Lead';
-
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.playerName) document.getElementById('input-player-name').value = parsed.playerName;
-        if (parsed.playerRole) {
-          selectedRole = parsed.playerRole;
-          selectedTitle = parsed.playerTitle;
-        }
       }
     } catch(e) {}
-
-    const roleButtons = document.querySelectorAll('.role-btn');
-    roleButtons.forEach(btn => {
-      if (btn.dataset.role === selectedRole) {
-        btn.className = 'role-btn active py-2.5 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-blue-50 border-blue-500 text-blue-900';
-      } else {
-        btn.className = 'role-btn py-2.5 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-white border-slate-200 text-slate-600 hover:border-slate-300';
-      }
-
-      btn.onclick = () => {
-        sfx.playClick();
-        roleButtons.forEach(b => {
-          b.className = 'role-btn py-2.5 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-white border-slate-200 text-slate-600 hover:border-slate-300';
-        });
-        btn.className = 'role-btn active py-2.5 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-blue-50 border-blue-500 text-blue-900';
-        selectedRole = btn.dataset.role;
-        selectedTitle = btn.dataset.title;
-      };
-    });
 
     document.getElementById('btn-start-game').onclick = () => {
       const input = document.getElementById('input-player-name');
@@ -136,12 +97,12 @@
       const newSave = {
         hasStarted: true,
         playerName: name,
-        playerRole: selectedRole,
-        playerTitle: selectedTitle,
-        budget: currentSave.budget ?? 1450,
-        morale: currentSave.morale ?? 96,
-        readiness: currentSave.readiness ?? 20,
-        countdownSeconds: currentSave.countdownSeconds ?? (18 * 3600 - 20),
+        playerRole: 'ALL_ROUND',
+        playerTitle: '新進研發隊員',
+        budget: currentSave.budget ?? 2000,
+        morale: currentSave.morale ?? 100,
+        readiness: currentSave.readiness ?? 0,
+        gameElapsedSeconds: currentSave.gameElapsedSeconds ?? 0, // 從 2022/7/1 開始累計
         solvedEventsList: currentSave.solvedEventsList ?? []
       };
 
