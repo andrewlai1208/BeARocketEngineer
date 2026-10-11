@@ -1,31 +1,87 @@
 // js/app.js
 import { LabAudio } from './audio.js';
 import { EventsEngine } from './eventsEngine.js';
-import { initWorkshopScene, createVoxelCharacter } from './scene.js';
+import { initWorkshopScene, createVoxelCharacter, updateCharacterWalk } from './scene.js';
 
-console.log('[Rocket24hr] 遊戲引擎啟動（Mobile Enabled）...');
+console.log('[BeARocketEngineer] 辦公室核心引擎啟動...');
 
 const sfx = new LabAudio();
 const engine = new EventsEngine();
 
+const STORAGE_KEY = 'BE_A_ROCKET_ENGINEER_SAVE_V1';
+
+// 本地存檔讀取
+function loadSavedGameState() {
+  const defaultState = {
+    hasStarted: false,
+    playerName: '阿剛',
+    playerRole: 'SE',
+    playerTitle: '系統整合 Lead',
+    budget: 1450,
+    morale: 96,
+    readiness: 20,
+    countdownSeconds: 18 * 3600 - 20,
+    solvedEventsList: []
+  };
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...defaultState, ...parsed };
+    }
+  } catch (err) {
+    console.warn('[Storage] 讀取存檔失敗', err);
+  }
+  return defaultState;
+}
+
+const savedData = loadSavedGameState();
+
+// 若尚未登入，導向 login.html
+if (!savedData.hasStarted) {
+  window.location.replace('login.html');
+}
+
 const gameState = {
-  budget: 1450,
-  morale: 96,
-  readiness: 20,
-  countdownSeconds: 18 * 3600 - 20,
-  playerRole: 'SE',
-  playerTitle: '系統整合 Lead',
-  solvedEvents: new Set(),
+  hasStarted: savedData.hasStarted,
+  playerName: savedData.playerName,
+  playerRole: savedData.playerRole,
+  playerTitle: savedData.playerTitle,
+  budget: savedData.budget,
+  morale: savedData.morale,
+  readiness: savedData.readiness,
+  countdownSeconds: savedData.countdownSeconds,
+  solvedEvents: new Set(savedData.solvedEventsList || []),
   keys: { w: false, a: false, s: false, d: false },
-  joystickVector: { x: 0, y: 0 }, // 手機搖桿輸入向量
+  joystickVector: { x: 0, y: 0 },
   nearbyNPC: null,
   activeDialogue: null
 };
 
-// 1. 初始化 3D 畫布與場景
+function saveGameState() {
+  const dataToSave = {
+    hasStarted: gameState.hasStarted,
+    playerName: gameState.playerName,
+    playerRole: gameState.playerRole,
+    playerTitle: gameState.playerTitle,
+    budget: gameState.budget,
+    morale: gameState.morale,
+    readiness: gameState.readiness,
+    countdownSeconds: gameState.countdownSeconds,
+    solvedEventsList: Array.from(gameState.solvedEvents)
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  } catch (err) {
+    console.warn('[Storage] 存檔失敗', err);
+  }
+}
+
+// 1. 初始化 3D 畫布與辦公室場景
 const canvas = document.getElementById('webgl-canvas');
 const badgeContainer = document.getElementById('badge-container');
-const { scene, camera, renderer, baseD, wallColliders, roomZones } = initWorkshopScene(canvas);
+const { scene, camera, renderer, baseD, wallColliders, roomZones, lockedDoors } = initWorkshopScene(canvas);
 
 // 生成主角
 const player = createVoxelCharacter(0xf59e0b);
@@ -35,58 +91,22 @@ scene.add(player);
 const playerTag = document.createElement('div');
 playerTag.id = 'player-tag';
 playerTag.className = 'hud-badge bg-amber-500 text-white';
-playerTag.innerText = `你 | ${gameState.playerTitle}`;
+playerTag.innerText = `${gameState.playerName} | ${gameState.playerTitle}`;
 badgeContainer.appendChild(playerTag);
 player.userData.tagEl = playerTag;
 
-// 2. 封面事件綁定
-function bindCoverEvents() {
-  const btnStart = document.getElementById('btn-start-game');
-  const cover = document.getElementById('cover-screen');
-  const roleButtons = document.querySelectorAll('.role-btn');
-
-  roleButtons.forEach(btn => {
-    btn.onclick = () => {
-      sfx.playClick();
-      roleButtons.forEach(b => {
-        b.className = 'role-btn py-2 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-white border-slate-200 text-slate-600';
-      });
-      btn.className = 'role-btn active py-2 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-blue-50 border-blue-500 text-blue-900';
-      gameState.playerRole = btn.dataset.role || 'SE';
-      gameState.playerTitle = btn.dataset.title || '系統整合 Lead';
-    };
+// 建立兩側大門的「Coming Soon」懸浮標籤
+if (lockedDoors) {
+  lockedDoors.forEach(door => {
+    const pill = document.createElement('div');
+    pill.className = 'hud-badge bg-slate-900/90 text-amber-400 border border-amber-500/60 font-black text-[11px] shadow-xl hidden px-3 py-1 flex items-center gap-1.5 backdrop-blur-md transition-all duration-200';
+    pill.innerHTML = `<span>🚧</span><span>${door.name} Coming Soon</span>`;
+    badgeContainer.appendChild(pill);
+    door.badgeEl = pill;
   });
-
-  if (btnStart) {
-    btnStart.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const inputName = document.getElementById('input-player-name');
-      const name = (inputName && inputName.value.trim()) ? inputName.value.trim() : '阿剛';
-      if (inputName) inputName.blur();
-
-      const tag = document.getElementById('player-tag');
-      if (tag) tag.innerText = `${name} | ${gameState.playerTitle}`;
-
-      sfx.playSelect();
-
-      if (cover) {
-        cover.style.transition = 'opacity 0.35s ease';
-        cover.style.opacity = '0';
-        cover.style.pointerEvents = 'none';
-        setTimeout(() => {
-          cover.classList.add('hidden');
-          cover.style.display = 'none';
-          window.focus();
-        }, 350);
-      }
-    });
-  }
 }
-bindCoverEvents();
 
-// 3. 各小間 NPC 站位
+// 2. NPC 配置
 const NPC_CONFIGS = [
   { roomId: 'avionics_room', shirtColor: 0x2563eb, pos: [-14.2, 0, -9.5], rot: Math.PI / 2 },
   { roomId: 'propulsion_room', shirtColor: 0xdc2626, pos: [0, 0, -12.2], rot: 0 },
@@ -132,8 +152,9 @@ function updateMetricsUI() {
   if (m) m.innerText = `${Math.max(0, gameState.morale)}%`;
   if (r) r.innerText = `${Math.min(100, gameState.readiness)}%`;
 }
+updateMetricsUI();
 
-// 4. 對話面板
+// 3. 對話系統邏輯
 const diagBox = document.getElementById('dialogue-box');
 const diagBadge = document.getElementById('diag-badge');
 const diagSpeaker = document.getElementById('diag-speaker');
@@ -170,6 +191,8 @@ function openRoomDialogue(npc) {
       if (opt.unlockEvents) {
         opt.unlockEvents.forEach(uId => gameState.solvedEvents.delete(uId));
       }
+
+      saveGameState();
       updateMetricsUI();
 
       diagText.innerText = opt.reply;
@@ -194,7 +217,6 @@ function closeDialogue() {
 const btnClose = document.getElementById('diag-btn-close');
 if (btnClose) btnClose.onclick = closeDialogue;
 
-// 手機專用互動按鈕監聽
 if (btnMobileInteract) {
   btnMobileInteract.addEventListener('click', (e) => {
     e.preventDefault();
@@ -206,7 +228,7 @@ if (btnMobileInteract) {
   });
 }
 
-// 音效與發射結算
+// 音效控制
 const btnSound = document.getElementById('btn-sound-toggle');
 if (btnSound) {
   btnSound.onclick = () => {
@@ -215,6 +237,7 @@ if (btnSound) {
   };
 }
 
+// 發射結算
 const btnLaunch = document.getElementById('btn-final-launch');
 if (btnLaunch) {
   btnLaunch.onclick = () => {
@@ -231,21 +254,31 @@ if (btnLaunch) {
       rTitle.innerText = '試車發射大成功！探空二號順利入軌！';
       rBadge.className = 'inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-2.5 bg-emerald-100 text-emerald-800 border border-emerald-300';
       rBadge.innerText = 'MISSION APOGEE: 1,650 METERS';
-      rDesc.innerText = `整備度達到 ${gameState.readiness}%！各小間排查順利，主傘頂空精準彈出，全體隊員在沙灘順利尋回整箭！`;
+      rDesc.innerText = `整備度達到 ${gameState.readiness}%！各小間通力排除隱患，主傘於頂空精準彈出，全體隊員在沙灘順利尋回整箭！`;
     } else {
       sfx.playAlarm();
       rIcon.innerText = '💥';
       rTitle.innerText = '半空中斷！發射中止與殘骸尋回';
       rBadge.className = 'inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-2.5 bg-red-100 text-red-800 border border-red-300';
       rBadge.innerText = 'MISSION ABORTED';
-      rDesc.innerText = `當前整備度僅 ${gameState.readiness}%。由於有獨立小間未完成巡檢排除隱患，火箭升空後姿態解體。收拾殘骸回工坊準備檢討報告！`;
+      rDesc.innerText = `當前整備度僅 ${gameState.readiness}%。由於有獨立小間未完成巡檢排除隱患，火箭升空後姿態解體。收拾殘骸回辦公室準備檢討報告！`;
     }
   };
 }
-const btnRestart = document.getElementById('btn-restart');
-if (btnRestart) btnRestart.onclick = () => window.location.reload();
 
-// 5. 投影標籤更新
+const btnRestart = document.getElementById('btn-restart');
+if (btnRestart) {
+  btnRestart.onclick = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    document.body.style.transition = 'opacity 0.35s ease';
+    document.body.style.opacity = '0';
+    setTimeout(() => {
+      window.location.href = 'login.html';
+    }, 350);
+  };
+}
+
+// 投影標籤更新
 const vProj = new THREE.Vector3();
 function updateHUD() {
   if (player.userData.tagEl) {
@@ -267,9 +300,21 @@ function updateHUD() {
     npc.hintEl.style.left = `${x}px`;
     npc.hintEl.style.top = `${y - 12}px`;
   });
+
+  // 更新封鎖門口的 Coming Soon 膠囊投影位置
+  if (lockedDoors) {
+    lockedDoors.forEach(door => {
+      if (door.badgeEl && !door.badgeEl.classList.contains('hidden')) {
+        vProj.copy(door.pos);
+        vProj.project(camera);
+        door.badgeEl.style.left = `${(vProj.x * 0.5 + 0.5) * window.innerWidth}px`;
+        door.badgeEl.style.top = `${(-vProj.y * 0.5 + 0.5) * window.innerHeight}px`;
+      }
+    });
+  }
 }
 
-// 6. 電腦端鍵盤監聽
+// 鍵盤監聽
 window.addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT') return;
   const code = e.code;
@@ -294,25 +339,20 @@ window.addEventListener('keyup', e => {
   if (code === 'KeyD' || code === 'ArrowRight') gameState.keys.d = false;
 });
 
-// ----------------------------------------------------
-// 7. 手機虛擬搖桿觸控系統
-// ----------------------------------------------------
+// 手機虛擬搖桿
 function setupMobileJoystick() {
   const zone = document.getElementById('joystick-zone');
   const knob = document.getElementById('joystick-knob');
   if (!zone || !knob) return;
 
-  let activeTouchId = null;
-  let originX = 0;
-  let originY = 0;
-  const maxRadius = 45; // 搖桿最大滑動半徑 (px)
+  let activeTouchId = null, originX = 0, originY = 0;
+  const maxRadius = 45;
 
   zone.addEventListener('touchstart', (e) => {
     e.preventDefault();
     if (activeTouchId !== null) return;
     const touch = e.changedTouches[0];
     activeTouchId = touch.identifier;
-
     const rect = zone.getBoundingClientRect();
     originX = rect.left + rect.width / 2;
     originY = rect.top + rect.height / 2;
@@ -357,7 +397,6 @@ function setupMobileJoystick() {
     const knobY = Math.sin(angle) * clampedDist;
     knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
 
-    // 標準化 -1 ~ 1 向量 (注意螢幕座標 Y 朝下)
     gameState.joystickVector.x = knobX / maxRadius;
     gameState.joystickVector.y = knobY / maxRadius;
   }
@@ -394,7 +433,7 @@ setInterval(() => {
   }
 }, 1000);
 
-// 8. 動畫主循環（支援手機搖桿 + 鍵盤雙向控制）
+// 4. 動畫主循環
 let currentD = baseD || 9.5;
 const targetLookAt = new THREE.Vector3(0, 0, 0);
 const currentLookAt = new THREE.Vector3(0, 0, 0);
@@ -402,7 +441,7 @@ const currentLookAt = new THREE.Vector3(0, 0, 0);
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
-  
+
   const rawDelta = clock.getDelta();
   const delta = Math.min(rawDelta, 0.05);
 
@@ -410,26 +449,25 @@ function animate() {
   let mz = 0;
   const speed = 7.5 * delta;
 
-  // 1. 電腦鍵盤輸入向量
+  // 鍵盤移動向量（核心公式：Camera at +X, +Y, +Z）
   if (gameState.keys.w) { mx -= speed * 0.7071; mz -= speed * 0.7071; }
   if (gameState.keys.s) { mx += speed * 0.7071; mz += speed * 0.7071; }
   if (gameState.keys.a) { mx -= speed * 0.7071; mz += speed * 0.7071; }
   if (gameState.keys.d) { mx += speed * 0.7071; mz -= speed * 0.7071; }
 
-  // 2. 手機虛擬搖桿輸入（將螢幕 2D 搖桿映射至等角 3D 世界）
+  // 手機虛擬搖桿
   const jx = gameState.joystickVector.x;
   const jy = gameState.joystickVector.y;
   if (Math.abs(jx) > 0.05 || Math.abs(jy) > 0.05) {
-    // 搖桿上 (-Y) -> 往上 (-X, -Z)
-    // 搖桿右 (+X) -> 往右 (+X, -Z)
     const joySpeed = speed * Math.hypot(jx, jy);
-    const rad = Math.atan2(jy, jx) - Math.PI / 4; // 依相機角度旋轉 45 度
+    const rad = Math.atan2(jy, jx) - Math.PI / 4;
     mx += Math.cos(rad) * joySpeed;
     mz += Math.sin(rad) * joySpeed;
   }
 
-  if (Math.abs(mx) > 0.0001 || Math.abs(mz) > 0.0001) {
-    const nextX = Math.max(-18.0, Math.min(18.0, player.position.x + mx));
+  const isMoving = Math.abs(mx) > 0.0001 || Math.abs(mz) > 0.0001;
+  if (isMoving) {
+    const nextX = Math.max(-19.5, Math.min(19.5, player.position.x + mx));
     const nextZ = Math.max(-16.0, Math.min(13.8, player.position.z + mz));
 
     if (!checkCollision(nextX, player.position.z)) {
@@ -440,16 +478,12 @@ function animate() {
     }
 
     player.rotation.y = Math.atan2(mx, mz);
-    player.userData.walkCycle += delta * 15;
-    const legAngle = Math.sin(player.userData.walkCycle) * 0.5;
-    player.userData.leftLeg.rotation.x = legAngle;
-    player.userData.rightLeg.rotation.x = -legAngle;
-  } else {
-    player.userData.leftLeg.rotation.x = 0;
-    player.userData.rightLeg.rotation.x = 0;
   }
 
-  // 接近 NPC 判定與手機按鈕狀態切換
+  // 人物雙腿擺動動畫
+  updateCharacterWalk(player, isMoving, delta);
+
+  // NPC 接近判定
   let closeOne = null;
   activeNPCs.forEach(npc => {
     const dist = player.position.distanceTo(npc.mesh.position);
@@ -472,7 +506,21 @@ function animate() {
     }
   }
 
-  // 鏡頭動態縮放
+  // ----------------------------------------------------
+  // 接近封鎖大門時浮現 Coming Soon 標籤
+  // ----------------------------------------------------
+  if (lockedDoors) {
+    lockedDoors.forEach(door => {
+      const dist = player.position.distanceTo(door.pos);
+      if (dist < 4.2) {
+        door.badgeEl.classList.remove('hidden');
+      } else {
+        door.badgeEl.classList.add('hidden');
+      }
+    });
+  }
+
+  // 動態 Zoom-In / Out
   const currentRoom = getCurrentRoom(player.position.x, player.position.z);
   let targetD = baseD || 9.5;
   if (currentRoom) {
@@ -508,13 +556,13 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// 9. 載入資料庫
+// 5. 載入資料庫並開局
 async function loadEventsData() {
   try {
     await engine.load('./data/events.json');
-    console.log('[Rocket24hr] 事件庫載入成功');
+    console.log('[BeARocketEngineer] 事件資料庫載入成功');
   } catch (err) {
-    console.warn('[Rocket24hr] 使用內建備用資料庫：', err);
+    console.warn('[BeARocketEngineer] 網路讀取 events.json 失敗，啟動備用資料庫：', err);
     engine.database = {
       avionics_room: {
         npcName: '小陳', roleTitle: '航電組長', badgeColor: 'bg-blue-600 text-white',
@@ -564,25 +612,5 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-
-const btnFullscreen = document.getElementById('btn-fullscreen');
-if (btnFullscreen) {
-  btnFullscreen.onclick = () => {
-    if (!document.fullscreenElement) {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else if (document.documentElement.webkitRequestFullscreen) {
-        document.documentElement.webkitRequestFullscreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      }
-    }
-  };
-}
 
 loadEventsData();

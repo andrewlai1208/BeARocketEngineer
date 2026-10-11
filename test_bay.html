@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>測試廠房 - BeARocketEngineer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="./css/style.css">
+  <style>
+    @keyframes pageFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    body {
+      animation: pageFadeIn 0.35s ease forwards;
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-slate-900">
+
+  <canvas id="webgl-canvas"></canvas>
+
+  <header class="safe-top-bar absolute left-3 right-3 md:left-5 md:right-5 z-30 flex items-center justify-between pointer-events-none">
+    <div class="glass-panel rounded-2xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto border-l-4 border-l-cyan-500 shadow-lg">
+      <button id="btn-back-office" class="px-3 py-1.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-700 transition flex items-center gap-1">
+        ← 回辦公室
+      </button>
+      <div class="h-6 w-px bg-slate-200"></div>
+      <div>
+        <div class="text-[10px] font-black text-cyan-600">TEST BAY</div>
+        <div class="text-sm font-extrabold text-slate-800">測試廠房</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="safe-bottom-controls absolute left-4 right-4 pointer-events-none z-30 flex justify-between items-end md:hidden">
+    <div id="joystick-zone" class="w-32 h-32 relative pointer-events-auto rounded-full bg-slate-800/40 backdrop-blur-sm border border-white/20 touch-none flex items-center justify-center">
+      <div id="joystick-knob" class="w-14 h-14 rounded-full bg-white/90 shadow-lg border border-slate-200"></div>
+    </div>
+    <button id="btn-interact" class="w-16 h-16 rounded-full bg-cyan-600 text-white font-black text-sm shadow-xl active:scale-90 pointer-events-auto flex items-center justify-center opacity-40">
+      互動
+    </button>
+  </div>
+
+  <script type="module">
+    import { initTestBayScene, createVoxelCharacter, updateCharacterWalk } from './js/scene.js';
+
+    let isTeleporting = false;
+    function navigateToOffice() {
+      if (isTeleporting) return;
+      isTeleporting = true;
+      document.body.style.transition = 'opacity 0.35s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 350);
+    }
+
+    document.getElementById('btn-back-office').onclick = navigateToOffice;
+
+    const canvas = document.getElementById('webgl-canvas');
+    const { scene, camera, renderer, d } = initTestBayScene(canvas);
+
+    const player = createVoxelCharacter(0xf59e0b);
+    player.position.set(10.5, 0, 0);
+    player.rotation.y = -Math.PI / 2;
+    scene.add(player);
+
+    const keys = { w: false, a: false, s: false, d: false };
+    const joystickVector = { x: 0, y: 0 };
+
+    window.addEventListener('keydown', e => {
+      const c = e.code;
+      if (c === 'KeyW' || c === 'ArrowUp') keys.w = true;
+      if (c === 'KeyS' || c === 'ArrowDown') keys.s = true;
+      if (c === 'KeyA' || c === 'ArrowLeft') keys.a = true;
+      if (c === 'KeyD' || c === 'ArrowRight') keys.d = true;
+    });
+    window.addEventListener('keyup', e => {
+      const c = e.code;
+      if (c === 'KeyW' || c === 'ArrowUp') keys.w = false;
+      if (c === 'KeyS' || c === 'ArrowDown') keys.s = false;
+      if (c === 'KeyA' || c === 'ArrowLeft') keys.a = false;
+      if (c === 'KeyD' || c === 'ArrowRight') keys.d = false;
+    });
+
+    const zone = document.getElementById('joystick-zone');
+    const knob = document.getElementById('joystick-knob');
+    if (zone && knob) {
+      let activeTouchId = null, originX = 0, originY = 0;
+      const maxRadius = 45;
+      zone.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (activeTouchId !== null) return;
+        const touch = e.changedTouches[0];
+        activeTouchId = touch.identifier;
+        const rect = zone.getBoundingClientRect();
+        originX = rect.left + rect.width / 2;
+        originY = rect.top + rect.height / 2;
+      }, { passive: false });
+
+      window.addEventListener('touchmove', e => {
+        if (activeTouchId === null) return;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          if (t.identifier === activeTouchId) {
+            const dx = t.clientX - originX, dy = t.clientY - originY;
+            const dist = Math.min(Math.hypot(dx, dy), maxRadius);
+            const ang = Math.atan2(dy, dx);
+            const kx = Math.cos(ang) * dist, ky = Math.sin(ang) * dist;
+            knob.style.transform = `translate(${kx}px, ${ky}px)`;
+            joystickVector.x = kx / maxRadius;
+            joystickVector.y = ky / maxRadius;
+            break;
+          }
+        }
+      }, { passive: false });
+
+      const endTouch = e => {
+        if (activeTouchId === null) return;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === activeTouchId) {
+            activeTouchId = null;
+            joystickVector.x = 0; joystickVector.y = 0;
+            knob.style.transform = 'translate(0px, 0px)';
+            break;
+          }
+        }
+      };
+      window.addEventListener('touchend', endTouch);
+      window.addEventListener('touchcancel', endTouch);
+    }
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const speed = 7.0 * delta;
+      let mx = 0, mz = 0;
+
+      if (keys.w) { mx -= speed * 0.7071; mz -= speed * 0.7071; }
+      if (keys.s) { mx += speed * 0.7071; mz += speed * 0.7071; }
+      if (keys.a) { mx -= speed * 0.7071; mz += speed * 0.7071; }
+      if (keys.d) { mx += speed * 0.7071; mz -= speed * 0.7071; }
+
+      const jx = joystickVector.x, jy = joystickVector.y;
+      if (Math.abs(jx) > 0.05 || Math.abs(jy) > 0.05) {
+        const joySpeed = speed * Math.hypot(jx, jy);
+        const rad = Math.atan2(jy, jx) - Math.PI / 4;
+        mx += Math.cos(rad) * joySpeed;
+        mz += Math.sin(rad) * joySpeed;
+      }
+
+      const isMoving = Math.abs(mx) > 0.001 || Math.abs(mz) > 0.001;
+      if (isMoving) {
+        player.position.x = Math.max(-11.5, Math.min(12.5, player.position.x + mx));
+        player.position.z = Math.max(-9.5, Math.min(9.5, player.position.z + mz));
+        player.rotation.y = Math.atan2(mx, mz);
+
+        if (player.position.x >= 12.0 && Math.abs(player.position.z) <= 1.8) {
+          navigateToOffice();
+        }
+      }
+
+      updateCharacterWalk(player, isMoving, delta);
+
+      camera.position.set(player.position.x + 16, 20, player.position.z + 16);
+      camera.lookAt(player.position);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      const asp = window.innerWidth / window.innerHeight;
+      camera.left = -d * asp;
+      camera.right = d * asp;
+      camera.top = d;
+      camera.bottom = -d;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

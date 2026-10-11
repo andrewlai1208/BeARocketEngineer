@@ -3,102 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BeARocketEngineer</title>
+  <title>辦公室 - BeARocketEngineer</title>
+  
+  <link rel="manifest" href="./manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BeARocketEngineer">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/style.css">
-  <!-- PWA Web App Manifest (Android Chrome) -->
-  <link rel="manifest" href="./manifest.json">
-
-<!-- iOS Safari 全螢幕與狀態列設定 -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="BeARocketEngineer">
-
-<!-- 行動端 Viewport 防縮放與安全區域填滿 -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <style>
+    @keyframes pageFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    body {
+      animation: pageFadeIn 0.35s ease forwards;
+    }
+  </style>
 </head>
 <body class="relative w-screen h-screen overflow-hidden bg-slate-100">
 
   <canvas id="webgl-canvas"></canvas>
   <div id="badge-container" class="absolute inset-0 pointer-events-none z-20"></div>
 
-  <!-- 手機專用虛擬控制器圖層 -->
+  <!-- 手機專用虛擬控制器 -->
   <div id="mobile-controls" class="safe-bottom-controls absolute left-4 right-4 pointer-events-none z-30 flex justify-between items-end md:hidden">
-      <!-- 虛擬搖桿基座 -->
-      <div id="joystick-zone" class="w-32 h-32 relative pointer-events-auto rounded-full bg-slate-800/20 backdrop-blur-sm border border-white/20 touch-none flex items-center justify-center">
-        <div id="joystick-knob" class="w-14 h-14 rounded-full bg-white/90 shadow-lg border border-slate-200 transition-transform duration-75"></div>
-      </div>
-
-      <!-- 手機互動按鈕 (靠近 NPC 時亮起) -->
-      <button id="btn-mobile-interact" class="w-16 h-16 rounded-full bg-blue-600 text-white font-black text-sm shadow-xl active:scale-90 transition pointer-events-auto flex items-center justify-center border-2 border-white/50 opacity-40">
-        互動
-      </button>
+    <div id="joystick-zone" class="w-32 h-32 relative pointer-events-auto rounded-full bg-slate-800/20 backdrop-blur-sm border border-white/20 touch-none flex items-center justify-center">
+      <div id="joystick-knob" class="w-14 h-14 rounded-full bg-white/90 shadow-lg border border-slate-200 transition-transform duration-75"></div>
     </div>
-
-  <!-- 封面選角卡片 -->
-  <div id="cover-screen" class="absolute inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/80 backdrop-blur-md transition-opacity duration-300">
-    <div class="relative w-full max-w-lg bg-white rounded-3xl p-6 md:p-8 shadow-2xl border border-slate-200 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between gap-2 mb-2">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-          <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-          ROCKET LAB
-        </span>
-        <span class="text-[11px] font-mono-num text-slate-400 font-semibold">V0.1.2</span>
-      </div>
-
-      <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-        BeARocket<span class="text-blue-600">Engineer</span>
-      </h1>
-      <p class="text-xs md:text-sm text-slate-600 mt-1.5 leading-relaxed">
-        倒數 18 小時！三間獨立研發室各有難題，利用搖桿穿梭各組，排除隱患讓火箭順利離架！
-      </p>
-
-      <div class="mt-4 space-y-3.5">
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">你的代號</label>
-          <input type="text" id="input-player-name" value="阿剛" maxlength="10"
-            class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">擔當職位</label>
-          <div class="grid grid-cols-3 gap-2" id="role-selector">
-            <button type="button" data-role="SE" data-title="系統整合 Lead"
-              class="role-btn active py-2 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-blue-50 border-blue-500 text-blue-900">
-              <span>🧭 整合</span>
-              <span class="text-[9px] text-blue-700">協調救火</span>
-            </button>
-            <button type="button" data-role="PROP" data-title="推進工程 Propulsion"
-              class="role-btn py-2 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-white border-slate-200 text-slate-600">
-              <span>🔥 推進</span>
-              <span class="text-[9px] text-slate-400">燃燒室</span>
-            </button>
-            <button type="button" data-role="AV" data-title="航電飛控 Avionics"
-              class="role-btn py-2 px-2 rounded-xl border text-xs font-bold text-center transition flex flex-col items-center gap-0.5 bg-white border-slate-200 text-slate-600">
-              <span>⚡ 航電</span>
-              <span class="text-[9px] text-slate-400">姿態飛控</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-5 pt-3 border-t border-slate-100 flex flex-col gap-2">
-        <button id="btn-start-game"
-          class="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-blue-500/25 transition">
-          進入工坊 →
-        </button>
-        <div class="text-[10px] text-slate-400 text-center">
-          電腦：WASD 移動・靠近按 [E] / 手機：左下搖桿移動・右下互動按鈕
-        </div>
-      </div>
-    </div>
+    <button id="btn-mobile-interact" class="w-16 h-16 rounded-full bg-blue-600 text-white font-black text-sm shadow-xl active:scale-90 transition pointer-events-auto flex items-center justify-center border-2 border-white/50 opacity-40">
+      互動
+    </button>
   </div>
 
-  <!-- HUD 狀態欄（往下移動，徹底避開時間、相機孔與瀏海） -->
+  <!-- HUD 狀態欄 -->
   <header class="safe-top-bar absolute left-3 right-3 md:left-5 md:right-5 z-30 flex items-center justify-between gap-2 pointer-events-none">
     <div class="glass-panel rounded-2xl px-3 py-2 md:px-5 md:py-3 flex items-center gap-3 md:gap-5 pointer-events-auto border-l-4 border-l-blue-600 shadow-lg">
       <div>
@@ -161,7 +105,7 @@
       <h2 id="res-title" class="text-lg md:text-xl font-black text-slate-900">發射結果</h2>
       <div id="res-badge" class="inline-block px-3 py-0.5 rounded-full text-[11px] font-mono-num font-bold mt-1 mb-2.5 bg-emerald-100 text-emerald-800 border border-emerald-300">STATUS</div>
       <p id="res-desc" class="text-xs text-slate-600 leading-relaxed text-left bg-slate-50 p-3.5 rounded-2xl border border-slate-100 mb-4"></p>
-      <button id="btn-restart" class="w-full py-2.5 md:py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm transition">重返工坊</button>
+      <button id="btn-restart" class="w-full py-2.5 md:py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm transition">重返辦公室</button>
     </div>
   </div>
 
